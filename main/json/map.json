@@ -9,7 +9,7 @@
     "keys": {
         "0": { "id": 0, "colour": "#333", "solid": 0 },
         "1": { "id": 1, "colour": "#12aaf8", "solid": 0 },
-        "2": { "id": 2, "colour": "#46292", "solid": 1, "bounce": 0.2 },
+        "2": { "id": 2, "colour": "#046292", "solid": 1, "bounce": 0.2 },
         "5": { "id": 5, "colour": "#E373FA", "solid": 1, "bounce": 1.1 },
         "6": { "id": 6, "colour": "#666", "solid": 1, "bounce": 0 }
     },
@@ -40,20 +40,15 @@
         [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 5, 5, 5, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
     ],
 
-
-
     "gravity": {
         "x": 0,
         "y": 0.3
     },
 
-
-
     "vel_limit": {
         "x": 4,
         "y": 10
     },
-
 
     "movement_speed": {
         "jump": 6,
@@ -61,12 +56,9 @@
         "right": 0.5
     },
 
-
-
     "player": {
         "x": 17,
         "y": 9,
-        "colour": "#FFFFFF"
+        "colour": "#999"
     }
-
 }]
