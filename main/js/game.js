@@ -128,7 +128,7 @@ Clarity.prototype.keydown = function(e) {
             _this.key.key_k = true;
             break;
         case 79: //o
-            this.load_map(map[0]);
+            this.load_map(0);
             break;
 
     }
@@ -172,7 +172,15 @@ Clarity.prototype.keyup = function(e) {
     }
 };
 
-Clarity.prototype.load_map = function(map) {
+Clarity.prototype.load_map = function(map_id) {
+    fetch("json/map.json").then(res => res.json()).then(data => {
+        game._load_map(data[map_id]);
+    });
+}
+
+
+Clarity.prototype._load_map = function(map) {
+
 
     if (typeof map === 'undefined' ||
         typeof map.data === 'undefined' ||
@@ -620,13 +628,10 @@ canvas.height = 1600;
 var game = new Clarity();
 game.set_viewport(canvas.width, canvas.height);
 
-// 读取json/map.json文件为对象, 存储在map中
-let map;
-fetch("json/map.json").then(res => res.json()).then(data => {
-    map = deepCopy(data);
-    console.log(data)
-    game.load_map(map[0]);
-});
+var tipBoard = document.getElementById("tipBoard");
+var playerColour = '#FF9900';
+game.load_map(0);
+let trapClock = 0;
 
 game.pauseFlag = false;
 var anim;
