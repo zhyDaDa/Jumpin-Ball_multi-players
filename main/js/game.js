@@ -619,7 +619,12 @@ canvas.height = 1600;
 
 var game = new Clarity();
 game.set_viewport(canvas.width, canvas.height);
-game.load_map(map[0]);
+let map;
+fetch("json/map.json").then(res => res.json()).then(data => {
+    map = deepCopy(data);
+    console.log(data)
+    game.load_map(map[0]);
+});
 game.pauseFlag = false;
 var anim;
 

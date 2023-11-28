@@ -99,12 +99,7 @@ function saveEgg() {
 var trapClock = 0;
 
 // 读取json/map.json文件为对象, 存储在map中
-let map;
-fetch("json/map.json").then(res => res.json()).then(data => {
-    map = deepCopy(data);
-    console.log(data)
-});
-console.log(map);
+
 // $.ajax({
 //     url: "json/map.json",
 //     type: "GET",
