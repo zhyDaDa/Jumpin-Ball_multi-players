@@ -619,12 +619,15 @@ canvas.height = 1600;
 
 var game = new Clarity();
 game.set_viewport(canvas.width, canvas.height);
+
+// 读取json/map.json文件为对象, 存储在map中
 let map;
 fetch("json/map.json").then(res => res.json()).then(data => {
     map = deepCopy(data);
     console.log(data)
     game.load_map(map[0]);
 });
+
 game.pauseFlag = false;
 var anim;
 

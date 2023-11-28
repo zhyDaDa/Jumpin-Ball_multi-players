@@ -98,8 +98,6 @@ function saveEgg() {
 
 var trapClock = 0;
 
-// 读取json/map.json文件为对象, 存储在map中
-
 // $.ajax({
 //     url: "json/map.json",
 //     type: "GET",
