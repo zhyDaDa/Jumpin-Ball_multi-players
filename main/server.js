@@ -1,4 +1,7 @@
+console.log('服务器开始运行');
+
 //引入websocket ws模块
+const fetch = require('node-fetch');
 var WebSocketServer = require('ws').Server;
 
 //初始化websocket
@@ -6,6 +9,11 @@ var WebSocketServer = require('ws').Server;
 var wss = new WebSocketServer({
     host: '0.0.0.0',
     port: 432
+});
+
+// wss 开启时console一下
+wss.on('listening', function() {
+    console.log('服务器开启');
 });
 
 var playerDic = {};
@@ -17,7 +25,14 @@ wss.on('connection', function(ws) {
     // 在playerDic中记录
     var ip = ws._socket.remoteAddress;
     playerDic[ip] = {
-        key: {},
+        key: {
+            left: false,
+            right: false,
+            up: false,
+            down: false,
+            key_j: false,
+            key_k: false
+        },
         player: {
 
             loc: {
@@ -55,7 +70,7 @@ wss.on('connection', function(ws) {
         process.exit();
     });
 
-});
+})
 
 function sendMessage(ws, message) {
     wss.clients.forEach(function(client) {
@@ -168,7 +183,7 @@ class GAME {
     }
 
     get_tile = function(x, y) {
-
+        let _this = (this);
         return (_this.current_map.data[y] && _this.current_map.data[y][x]) ? deepCopy(_this.current_map.data[y][x]) : 0;
     }
 
@@ -179,11 +194,11 @@ class GAME {
         var tX = player.player.loc.x + player.player.vel.x;
         var tY = player.player.loc.y + player.player.vel.y;
 
-        var offset = Math.round((player.tile_size / 2) - 1);
+        var offset = Math.round((this.tile_size / 2) - 1);
 
-        var tile = get_tile(
-            Math.round(player.player.loc.x / player.tile_size),
-            Math.round(player.player.loc.y / player.tile_size)
+        var tile = this.get_tile(
+            Math.round(player.player.loc.x / this.tile_size),
+            Math.round(player.player.loc.y / this.tile_size)
         );
 
         if (tile.gravity) {
@@ -203,28 +218,28 @@ class GAME {
             player.player.vel.y *= tile.friction.y;
         }
 
-        var t_y_up = Math.floor(tY / player.tile_size);
-        var t_y_down = Math.ceil(tY / player.tile_size);
-        var y_near1 = Math.round((player.player.loc.y - offset) / player.tile_size);
-        var y_near2 = Math.round((player.player.loc.y + offset) / player.tile_size);
+        var t_y_up = Math.floor(tY / this.tile_size);
+        var t_y_down = Math.ceil(tY / this.tile_size);
+        var y_near1 = Math.round((player.player.loc.y - offset) / this.tile_size);
+        var y_near2 = Math.round((player.player.loc.y + offset) / this.tile_size);
 
-        var t_x_left = Math.floor(tX / player.tile_size);
-        var t_x_right = Math.ceil(tX / player.tile_size);
-        var x_near1 = Math.round((player.player.loc.x - offset) / player.tile_size);
-        var x_near2 = Math.round((player.player.loc.x + offset) / player.tile_size);
+        var t_x_left = Math.floor(tX / this.tile_size);
+        var t_x_right = Math.ceil(tX / this.tile_size);
+        var x_near1 = Math.round((player.player.loc.x - offset) / this.tile_size);
+        var x_near2 = Math.round((player.player.loc.x + offset) / this.tile_size);
 
-        var top1 = get_tile(x_near1, t_y_up);
-        var top2 = get_tile(x_near2, t_y_up);
-        var bottom1 = get_tile(x_near1, t_y_down);
-        var bottom2 = get_tile(x_near2, t_y_down);
-        var left1 = get_tile(t_x_left, y_near1);
-        var left2 = get_tile(t_x_left, y_near2);
-        var left3 = get_tile(t_x_left - 1, y_near1);
-        var left4 = get_tile(t_x_left - 1, y_near2);
-        var right1 = get_tile(t_x_right, y_near1);
-        var right2 = get_tile(t_x_right, y_near2);
-        var right3 = get_tile(t_x_right + 1, y_near1);
-        var right4 = get_tile(t_x_right + 1, y_near2);
+        var top1 = this.get_tile(x_near1, t_y_up);
+        var top2 = this.get_tile(x_near2, t_y_up);
+        var bottom1 = this.get_tile(x_near1, t_y_down);
+        var bottom2 = this.get_tile(x_near2, t_y_down);
+        var left1 = this.get_tile(t_x_left, y_near1);
+        var left2 = this.get_tile(t_x_left, y_near2);
+        var left3 = this.get_tile(t_x_left - 1, y_near1);
+        var left4 = this.get_tile(t_x_left - 1, y_near2);
+        var right1 = this.get_tile(t_x_right, y_near1);
+        var right2 = this.get_tile(t_x_right, y_near2);
+        var right3 = this.get_tile(t_x_right + 1, y_near1);
+        var right4 = this.get_tile(t_x_right + 1, y_near2);
 
 
         if (tile.jump && player.jump_switch > 15) {
@@ -253,7 +268,7 @@ class GAME {
         if (player.player.float_ability && player.player.can_float && player.key.key_k == true) {
             for (var p = -3; p < 3; p++) {
                 for (var q = -2; q < 4; q++) {
-                    var localTile = get_tile(t_x_left + q, t_y_up + p);
+                    var localTile = this.get_tile(t_x_left + q, t_y_up + p);
                     if (localTile.solid) { continue; }
                     if (!(_this.current_map.data[t_y_up + p] && _this.current_map.data[t_y_up + p][t_x_left + q])) { continue; }
                     _this.current_map.data[t_y_up + p][t_x_left + q] = deepCopy({ colour: '#EADBC5', solid: 0, gravity: { x: 0, y: -0.3 } });
@@ -281,12 +296,12 @@ class GAME {
 
             /* 解决重叠 */
 
-            while (get_tile(Math.floor(player.player.loc.x / player.tile_size), y_near1).solid ||
-                get_tile(Math.floor(player.player.loc.x / player.tile_size), y_near2).solid)
+            while (this.get_tile(Math.floor(player.player.loc.x / this.tile_size), y_near1).solid ||
+                this.get_tile(Math.floor(player.player.loc.x / this.tile_size), y_near2).solid)
                 player.player.loc.x += 0.1;
 
-            while (get_tile(Math.ceil(player.player.loc.x / player.tile_size), y_near1).solid ||
-                get_tile(Math.ceil(player.player.loc.x / player.tile_size), y_near2).solid)
+            while (this.get_tile(Math.ceil(player.player.loc.x / this.tile_size), y_near1).solid ||
+                this.get_tile(Math.ceil(player.player.loc.x / this.tile_size), y_near2).solid)
                 player.player.loc.x -= 0.1;
 
             /* 瓷砖反弹 */
@@ -306,12 +321,12 @@ class GAME {
 
             /* 解决重叠 */
 
-            while (get_tile(x_near1, Math.floor(player.player.loc.y / player.tile_size)).solid ||
-                get_tile(x_near2, Math.floor(player.player.loc.y / player.tile_size)).solid)
+            while (this.get_tile(x_near1, Math.floor(player.player.loc.y / this.tile_size)).solid ||
+                this.get_tile(x_near2, Math.floor(player.player.loc.y / this.tile_size)).solid)
                 player.player.loc.y += 0.1;
 
-            while (get_tile(x_near1, Math.ceil(player.player.loc.y / player.tile_size)).solid ||
-                get_tile(x_near2, Math.ceil(player.player.loc.y / player.tile_size)).solid)
+            while (this.get_tile(x_near1, Math.ceil(player.player.loc.y / this.tile_size)).solid ||
+                this.get_tile(x_near2, Math.ceil(player.player.loc.y / this.tile_size)).solid)
                 player.player.loc.y -= 0.1;
 
             /* 瓷砖反弹 */
@@ -351,6 +366,8 @@ class GAME {
 
     update_player = function(player) {
         var _this = (this);
+
+        console.log(`player update, player: ${player}`);
 
         if (player.key.left) {
 
@@ -393,15 +410,18 @@ class GAME {
         //     player.player.can_float = false;
         // }
 
-        move_player(player);
+        this.move_player(player);
+    }
+
+    update = function() {
+        for (let player in playerDic) {
+            game.update_player(playerDic[player]);
+        }
     }
 
 }
 
 let game = new GAME();
+game.load_map(0);
 
-while (1) {
-    for (let player in playerDic) {
-        game.update_player(player);
-    }
-}
+setInterval(game.update, 1000 / 60);

@@ -22,6 +22,7 @@ function setServer() {
 
 function tellServer(key) {
     let message = JSON.stringify(key);
+    console.log(`发送给服务器: ${message}`);
     socket.send(message);
 }
 
