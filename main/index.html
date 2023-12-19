@@ -26,18 +26,16 @@
 
     </div>
     <script src="js/map.js"></script>
-    <script src="js/game.js"></script>
+    <script src="js/client.js"></script>
     <script>
         window.onload = function() {
-
+            // 链接 432 ws
+            setServer();
             var startGameId = document.getElementById("startGame");
             var enterGameId = document.getElementById("enterGame");
             var gameId = document.getElementById("gameId");
-            // enterGameId.onclick = function () {
             gameId.setAttribute("style", "display:block");
             startGameId.setAttribute("style", "display:none");
-            Loop();
-            // }
         }
     </script>
 </body>
