@@ -66,6 +66,11 @@ wss.on('connection', function(ws) {
         ws: ws
     }
 
+    playerDic[ip].name = ip + "";
+    playerDic[ip].player.loc.x = game.current_map.player.x;
+    playerDic[ip].player.loc.y = game.current_map.player.y;
+    playerDic[ip].player.colour = game.current_map.player.colour;
+
     // 为其设置监听
     ws.on('message', function(message) {
         // console.log("收到消息了");
@@ -487,4 +492,4 @@ game.load_map(0);
 setInterval(() => {
     game.update();
     game.broadcast();
-}, 1000 / 60);
+}, 1000 / 70);
