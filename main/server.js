@@ -411,7 +411,7 @@ class GAME {
         // 负责通过玩家按键来确定当前的速度和技能使用
         var _this = (this);
 
-        console.log(`player update\nposition: (${player.player.loc.x},${player.player.loc.y}); velocity: (${player.player.vel.x},${player.player.vel.y})`);
+        // console.log(`player update\nposition: (${player.player.loc.x},${player.player.loc.y}); velocity: (${player.player.vel.x},${player.player.vel.y})`);
 
         if (player.key.left) {
 
@@ -467,11 +467,17 @@ class GAME {
         let _this = (this);
         let data = {
             map_id: _this.current_map.mapId,
-            players: Object.values(playerDic).map((player) => player.player)
+            players: Object.values(playerDic).map((player) => player.player),
+            camera: {}
         }
-        let message = JSON.stringify(data);
-        console.log(message);
-        sendAll(message);
+        wss.clients.forEach(function(client) {
+            // 获取client的ip
+            let thisIp = client._socket.remoteAddress;
+            data.camera.x = playerDic[thisIp].player.loc.x;
+            data.camera.y = playerDic[thisIp].player.loc.y;
+            let message = JSON.stringify(data);
+            client.send(message);
+        })
     }
 }
 

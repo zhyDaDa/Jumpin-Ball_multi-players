@@ -13,7 +13,7 @@ function setServer() {
     socket.onmessage = function(e) {
         let data = JSON.parse(e.data);
         console.log(data);
-        game.draw(ctx, data.map_id, data.players);
+        game.draw(ctx, data.map_id, data.players, data.camera);
     };
     socket.onclose = function() {
         console.log("连接关闭");
@@ -629,9 +629,9 @@ Clarity.prototype.update = function() {
     this.update_player();
 };
 
-Clarity.prototype.update_camera = function() {
-    var c_x = Math.round(this.player.loc.x - this.viewport.x / 2);
-    var c_y = Math.round(this.player.loc.y - this.viewport.y / 2);
+Clarity.prototype.update_camera = function(target_x, target_y) {
+    var c_x = Math.round(target_x - this.viewport.x / 2);
+    var c_y = Math.round(target_y - this.viewport.y / 2);
     var x_dif = Math.abs(c_x - this.camera.x);
     var y_dif = Math.abs(c_y - this.camera.y);
 
@@ -686,9 +686,9 @@ Clarity.prototype.update_camera = function() {
     }
 };
 
-Clarity.prototype.draw = function(context, map_id, players) {
+Clarity.prototype.draw = function(context, map_id, players, camera) {
     // 如果地图改变, 重新加载
-    if (map_id != this.current_map.mapId) this.load_map(map_id);
+    if (!this.current_map || map_id != this.current_map.mapId) this.load_map(map_id);
 
     // 清空画布
     ctx.fillStyle = game.current_map.background;
@@ -699,7 +699,11 @@ Clarity.prototype.draw = function(context, map_id, players) {
 
     // 画出所有玩家
     this.draw_all_players(context, players);
+
+    // 调整相机位置
+    this.update_camera(camera.x, camera.y);
 };
+
 
 
 var canvas = document.getElementById('canvas'),
