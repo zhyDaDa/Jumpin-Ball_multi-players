@@ -1,19 +1,7 @@
-console.log('服务器开始运行');
+console.log('Server.js 开始运行');
 
-// import fetch from "node-fetch";
-// const fetch = require('node-fetch');
 const fs = require('fs');
-
-//引入websocket ws模块
 var WebSocketServer = require('ws').Server;
-// 写成import的形式
-// import { WebSocketServer } from 'ws'
-// const WebSocketServer = WS.Server;
-// 打印WS所有成员
-// console.log(WS);
-// for (var key in WS) {
-//     console.log(key);
-// }
 
 //初始化websocket
 // 以wifi的ip地址作为服务器的ip地址, port: 432 作为端口号
@@ -21,7 +9,6 @@ var wss = new WebSocketServer({
     host: '0.0.0.0',
     port: 432
 });
-// var wss = new WS('http://127.0.0.1');
 
 // wss 开启时console一下
 wss.on('listening', function() {
@@ -142,17 +129,13 @@ class GAME {
 
 
     load_map = function(map_id) {
-        // fetch("ws://127.0.0.1:432/json/map.json").then(res => res.json()).then(data => {
-        //     this._load_map(data[map_id]);
-        //     console.log(`已成功装载地图, 地图mapName: ${this.current_map.mapName}`);
-        // });
-
-        const jsonData = JSON.parse(fs.readFileSync('main/json/map.json'));
-        console.log(jsonData);
+        const data = JSON.parse(fs.readFileSync('main/json/map.json'));
+        this._load_map(data[map_id]);
+        console.log(`已成功装载地图, 地图mapName: ${this.current_map.mapName}`);
     }
 
     _load_map = function(map) {
-
+        _this = (this); // 保存this的引用
 
         if (typeof map === 'undefined' ||
             typeof map.data === 'undefined' ||
@@ -179,22 +162,22 @@ class GAME {
 
         // 把data地图中所有的数字转换为tile对象, 同时记录地图的宽度和高度
         // todo: 有改动
-        __this.current_map.height = map.data.length;
+        _this.current_map.height = map.data.length;
 
         map.data.forEach(function(row, y) {
 
-            __this.current_map.width = Math.max(__this.current_map.width, row.length);
+            _this.current_map.width = Math.max(_this.current_map.width, row.length);
 
             row.forEach(function(tile, x) {
 
-                __this.current_map.data[y][x] = map.keys[map.data[y][x]];
+                _this.current_map.data[y][x] = map.keys[map.data[y][x]];
             });
         });
 
         _this.current_map.width_p = _this.current_map.width * this.tile_size;
         _this.current_map.height_p = _this.current_map.height * this.tile_size;
 
-        this.log('Successfully loaded map data.');
+        console.log('Successfully loaded map data.');
 
         return true;
     }
