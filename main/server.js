@@ -1,12 +1,13 @@
 console.log('服务器开始运行');
 
-import fetch from "node-fetch";
+// import fetch from "node-fetch";
 // const fetch = require('node-fetch');
+const fs = require('fs');
 
 //引入websocket ws模块
-// var WebSocketServer = require('ws').Server;
+var WebSocketServer = require('ws').Server;
 // 写成import的形式
-import { WebSocketServer } from 'ws'
+// import { WebSocketServer } from 'ws'
 // const WebSocketServer = WS.Server;
 // 打印WS所有成员
 // console.log(WS);
@@ -24,7 +25,8 @@ var wss = new WebSocketServer({
 
 // wss 开启时console一下
 wss.on('listening', function() {
-    console.log('服务器开启');
+    console.log(`服务器开启, 地址是: ${wss.address().address}`);
+    console.log(wss.address());
 });
 
 var playerDic = {};
@@ -140,10 +142,13 @@ class GAME {
 
 
     load_map = function(map_id) {
-        fetch("./json/map.json").then(res => res.json()).then(data => {
-            this._load_map(data[map_id]);
-            console.log(`已成功装载地图, 地图mapName: ${this.current_map.mapName}`);
-        });
+        // fetch("ws://127.0.0.1:432/json/map.json").then(res => res.json()).then(data => {
+        //     this._load_map(data[map_id]);
+        //     console.log(`已成功装载地图, 地图mapName: ${this.current_map.mapName}`);
+        // });
+
+        const jsonData = JSON.parse(fs.readFileSync('main/json/map.json'));
+        console.log(jsonData);
     }
 
     _load_map = function(map) {
@@ -436,4 +441,4 @@ class GAME {
 let game = new GAME();
 game.load_map(0);
 
-setInterval(game.update, 1000 / 60);
+// setInterval(game.update, 1000 / 60);
