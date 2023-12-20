@@ -1,8 +1,18 @@
 console.log('服务器开始运行');
 
+import fetch from "node-fetch";
+// const fetch = require('node-fetch');
+
 //引入websocket ws模块
-const fetch = require('node-fetch');
-var WebSocketServer = require('ws').Server;
+// var WebSocketServer = require('ws').Server;
+// 写成import的形式
+import { WebSocketServer } from 'ws'
+// const WebSocketServer = WS.Server;
+// 打印WS所有成员
+// console.log(WS);
+// for (var key in WS) {
+//     console.log(key);
+// }
 
 //初始化websocket
 // 以wifi的ip地址作为服务器的ip地址, port: 432 作为端口号
@@ -10,6 +20,7 @@ var wss = new WebSocketServer({
     host: '0.0.0.0',
     port: 432
 });
+// var wss = new WS('http://127.0.0.1');
 
 // wss 开启时console一下
 wss.on('listening', function() {
@@ -129,8 +140,9 @@ class GAME {
 
 
     load_map = function(map_id) {
-        fetch("json/map.json").then(res => res.json()).then(data => {
+        fetch("./json/map.json").then(res => res.json()).then(data => {
             this._load_map(data[map_id]);
+            console.log(`已成功装载地图, 地图mapName: ${this.current_map.mapName}`);
         });
     }
 
