@@ -609,13 +609,13 @@ Clarity.prototype.draw_all_players = function(context, players) {
 
 Clarity.prototype.draw_player = function(context, player) {
 
-    context.fillStyle = this.player.colour;
+    context.fillStyle = player.colour || "oranges";
 
     context.beginPath();
 
     context.arc(
-        this.player.loc.x + this.tile_size / 2 - this.camera.x,
-        this.player.loc.y + this.tile_size / 2 - this.camera.y,
+        player.loc.x + this.tile_size / 2 - this.camera.x,
+        player.loc.y + this.tile_size / 2 - this.camera.y,
         this.tile_size / 2 - 1,
         0,
         Math.PI * 2

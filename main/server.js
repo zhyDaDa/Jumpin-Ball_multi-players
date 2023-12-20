@@ -45,6 +45,8 @@ wss.on('connection', function(ws) {
                 y: 0
             },
 
+            colour: '#000',
+
             can_jump: true,
             doublejumpFlag: false,
             can_doublejump: true,
@@ -86,7 +88,7 @@ process.on('SIGINT', function() {
 function sendMessage(ws, message) {
     wss.clients.forEach(function(client) {
         // 获取client的ip
-        var thisIp = client._socket.remoteAddress;
+        let thisIp = client._socket.remoteAddress;
         // 如果不是自己
         if (thisIp != ip) {
             console.log(`client:${thisIp} ip:${ip}`);
@@ -104,7 +106,16 @@ function sendMessage(ws, message) {
     });
 }
 
-var deepCopy = function(source, kaiguan) {
+function sendAll(message) {
+    wss.clients.forEach(function(client) {
+        // 获取client的ip
+        let thisIp = client._socket.remoteAddress;
+        client.send(message);
+    })
+}
+
+
+const deepCopy = function(source, kaiguan) {
     var result = {};
     if (kaiguan == 1) var result = [];
     for (var key in source) {
@@ -450,9 +461,24 @@ class GAME {
             game.update_player(playerDic[player]);
         }
     }
+
+    broadcast = function() {
+        // client端: game.draw(ctx, data.map_id, data.players);
+        let _this = (this);
+        let data = {
+            map_id: _this.current_map.mapId,
+            players: Object.values(playerDic).map((player) => player.player)
+        }
+        let message = JSON.stringify(data);
+        console.log(message);
+        sendAll(message);
+    }
 }
 
 let game = new GAME();
 game.load_map(0);
 
-setInterval(game.update, 1000 / 60);
+setInterval(() => {
+    game.update();
+    game.broadcast();
+}, 1000 / 60);
