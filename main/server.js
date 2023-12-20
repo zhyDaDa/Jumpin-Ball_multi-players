@@ -64,13 +64,24 @@ wss.on('connection', function(ws) {
         ws: ws
     }
 
-    //SIGINT这个信号是系统默认信号，代表信号中断，就是ctrl+c
-    process.on('SIGINT', function() {
-        console.log("Closing things");
-        process.exit();
-    });
+    // 为其设置监听
+    ws.on('message', function(message) {
+        // console.log("收到消息了");
+        // 获得消息来源的ip和端口号
+        var ip = ws._socket.remoteAddress;
+        console.log("Received: " + message + " from " + ip);
+        data = JSON.parse(message);
+        // 更新玩家字典中的数据
+        playerDic[ip].key = deepCopy(data);
 
-})
+    });
+});
+
+//SIGINT这个信号是系统默认信号，代表信号中断，就是ctrl+c
+process.on('SIGINT', function() {
+    console.log("Closing things");
+    process.exit();
+});
 
 function sendMessage(ws, message) {
     wss.clients.forEach(function(client) {
@@ -109,16 +120,6 @@ var deepCopy = function(source, kaiguan) {
     return result;
 }
 
-wss.on('message', function(message) {
-    // 获得消息来源的ip和端口号
-    var ip = ws._socket.remoteAddress;
-    console.log("Received: " + message + " from " + ip);
-    data = JSON.parse(message);
-    // 更新玩家字典中的数据
-    playerDic[ip].key = deepCopy(data);
-
-});
-
 class GAME {
     constructor() {
         this.alert_errors = false;
@@ -146,6 +147,7 @@ class GAME {
             return false;
         }
 
+        // 基本与原本一致, 只处理一些数值问题和合法性检查
         _this.current_map = deepCopy(map);
 
         if (typeof _this.current_map.onLoad === "function") _this.current_map.onLoad();
@@ -185,6 +187,33 @@ class GAME {
     get_tile = function(x, y) {
         let _this = (this);
         return (_this.current_map.data[y] && _this.current_map.data[y][x]) ? deepCopy(_this.current_map.data[y][x]) : 0;
+    }
+
+    teleport_player = function(player, x, y) {
+        // 单纯意义上的传送只会改变位置
+        player.player.loc.x = x;
+        player.player.loc.y = y;
+        // player.player.vel.x = 0;
+        // player.player.vel.y = 0;
+        // player.player.can_jump = true;
+        // player.player.can_doublejump = true;
+        // player.player.can_dash = true;
+        // player.player.can_float = true;
+        // player.player.glide_ability = true;
+        // player.player.dash_ability = true;
+    }
+
+    teleport_player_to_savePoint = function(player) {
+        // 存档点就是地图默认玩家位置
+        this.teleport_player(player, this.current_map.player.x, this.current_map.player.y);
+        player.player.vel.x = 0;
+        player.player.vel.y = 0;
+        player.player.can_jump = true;
+        player.player.can_doublejump = true;
+        player.player.can_dash = true;
+        player.player.can_float = true;
+        player.player.glide_ability = true;
+        player.player.dash_ability = true;
     }
 
     move_player = function(player) {
@@ -282,9 +311,12 @@ class GAME {
             player.player.doublejumpFlag = false;
         }
 
+        /* 坠落判断 */
         if (player.player.loc.y > _this.current_map.height_p + 100) {
             // player坠落死亡
-            player.deaths.drop++;
+            player.player.deaths.drop++;
+            // player回到重生点
+            this.teleport_player_to_savePoint(player);
         }
 
         player.player.loc.x += player.player.vel.x;
@@ -365,16 +397,16 @@ class GAME {
     }
 
     update_player = function(player) {
+        // 负责通过玩家按键来确定当前的速度和技能使用
         var _this = (this);
 
-        console.log(`player update, player: ${player}`);
+        console.log(`player update\nposition: (${player.player.loc.x},${player.player.loc.y}); velocity: (${player.player.vel.x},${player.player.vel.y})`);
 
         if (player.key.left) {
 
             if (player.player.vel.x > -_this.current_map.vel_limit.x)
                 player.player.vel.x -= _this.current_map.movement_speed.left;
         }
-
         if (player.key.up) {
             if (player.player.can_jump && !player.player.doublejumpFlag && player.player.can_doublejump && player.player.vel.y > -_this.current_map.vel_limit.y) {
 
@@ -418,10 +450,9 @@ class GAME {
             game.update_player(playerDic[player]);
         }
     }
-
 }
 
 let game = new GAME();
 game.load_map(0);
 
-// setInterval(game.update, 1000 / 60);
+setInterval(game.update, 1000 / 60);
