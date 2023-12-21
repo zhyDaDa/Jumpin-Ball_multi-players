@@ -1,27 +1,38 @@
-var h6_1 = document.getElementById("h6_1");
-var h6_2 = document.getElementById("h6_2");
-var h6_3 = document.getElementById("h6_3");
+const h6_1 = document.getElementById("h6_1");
+const h6_2 = document.getElementById("h6_2");
+const h6_3 = document.getElementById("h6_3");
 
-var BGColor = '#333';
+const BGColor = '#333';
 
-function setServer() {
-    window.socket = new WebSocket("ws://127.0.0.1:432");
+function setServer(serverAddress) {
+    serverAddress = serverAddress || "ws://127.0.0.1:432";
+    if (serverAddress.indexOf("ws") < 0) serverAddress = "ws://" + serverAddress + ":432";
+    // 保存上次的地址
+    localStorage.setItem("lastServerAddress", serverAddress);
+    document.querySelector("#currentServerIP").innerText = serverAddress;
+    document.querySelector("#h6_3").innerHTML = `<font color="blue"> 尝试连接服务器中... </font>`
+    window.socket = new WebSocket(serverAddress);
     socket.onopen = function() {
-        console.log("连接成功");
-        alert("成功连接到服务器");
+        console.log("成功连接到服务器");
+        // alert("成功连接到服务器");
+        document.querySelector("#h6_3").innerHTML = `<font color="green"> 成功连接到服务器 </font>`
     };
     socket.onmessage = function(e) {
         let data = JSON.parse(e.data);
-        console.log(data);
+        // console.log(data);
         game.draw(ctx, data.map_id, data.players, data.camera);
+        // 计算延迟
+        let latency = Date.now() - data.time;
+        document.querySelector("#serverDelay").innerText = latency;
     };
     socket.onclose = function() {
         console.log("连接关闭");
+        document.querySelector("#h6_3").innerHTML = `<font color="red"> 服务器连接已断开 </font>`
     };
 }
 
-function tellServer(key) {
-    let message = JSON.stringify(key);
+function tellServer() {
+    let message = JSON.stringify({ key: game.key, color: playerColour || '#FF9900' });
     console.log(`发送给服务器: ${message}`);
     socket.send(message);
 }
@@ -155,7 +166,7 @@ Clarity.prototype.keydown = function(e) {
             //     break;
 
     }
-    tellServer(_this.key);
+    tellServer();
 };
 
 Clarity.prototype.keyup = function(e) {
@@ -194,7 +205,7 @@ Clarity.prototype.keyup = function(e) {
             _this.key.key_k = false;
             break;
     }
-    tellServer(_this.key);
+    tellServer();
 };
 
 Clarity.prototype.load_map = function(map_id) {
@@ -705,6 +716,10 @@ Clarity.prototype.draw = function(context, map_id, players, camera) {
     this.update_camera(camera.x, camera.y);
 };
 
+function setSkinColor(color) {
+    playerColour = color;
+    tellServer()
+}
 
 
 var canvas = document.getElementById('canvas'),

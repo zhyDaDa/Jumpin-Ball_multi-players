@@ -55,10 +55,10 @@ wss.on('connection', function(ws) {
             can_dash: true,
 
 
-            doublejump_ability: false,
-            glide_ability: false,
-            dash_ability: false,
-            float_ability: false,
+            doublejump_ability: true,
+            glide_ability: true,
+            dash_ability: true,
+            float_ability: true,
 
             deaths: { red: 0, drop: 0, all: function() { return this.red + this.drop; } }
         },
@@ -76,10 +76,11 @@ wss.on('connection', function(ws) {
         // console.log("收到消息了");
         // 获得消息来源的ip和端口号
         var ip = ws._socket.remoteAddress;
-        console.log("Received: " + message + " from " + ip);
+        // console.log("Received: " + message + " from " + ip);
         data = JSON.parse(message);
         // 更新玩家字典中的数据
-        playerDic[ip].key = deepCopy(data);
+        playerDic[ip].key = deepCopy(data.key);
+        playerDic[ip].player.colour = data.color;
 
     });
 });
@@ -473,7 +474,8 @@ class GAME {
         let data = {
             map_id: _this.current_map.mapId,
             players: Object.values(playerDic).map((player) => player.player),
-            camera: {}
+            camera: {},
+            time: new Date().getTime()
         }
         wss.clients.forEach(function(client) {
             // 获取client的ip

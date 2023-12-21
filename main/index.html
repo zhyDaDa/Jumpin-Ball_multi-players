@@ -17,20 +17,48 @@
     </div>
 
     <div class="gameId" id="gameId" style="display: none;">
-        <div id="tipBoard">按方向键或wasd移动,向上就是跳跃<br>按空格暂停或继续</div>
+        <div id="tipBoard">
+            <h6 id="h6_1">
+                <form action="javascript:void(0);" id="addressForm">
+                    <input type="text" name="joinServerIP" id="joinServerIP" placeholder="输入服务器地址" />
+                    <input type="submit" value="加入" />
+                </form>
+            </h6>
+            <h6 id="h6_2">
+                <span>当前服务器地址: <span id="currentServerIP" style="color:blueviolet">null</span></span>
+            </h6>
+            <h6 id="h6_3">尚未连接服务器</h6>
+            <h6 id="h6_4">服务器信号延迟: &nbsp;<span style="color: darkgreen;" id="serverDelay">null</span>&nbsp;ms</h6>
+            <hr style="margin:1rem 0;">
+            <h6 id="h6_5">输入皮肤颜色:
+                <form action="javascript:void(0);" id="setSkinColor">
+                    <input type="text" name="skinColor" id="skinColor" placeholder="带#的十六进制或英文" />
+                    <input type="submit" value="设置" />
+                </form>
+            </h6>
+        </div>
         <canvas id="canvas"></canvas>
 
-        <h6 id="h6_1"></h6>
-        <h6 id="h6_2"></h6>
-        <h6 id="h6_3"></h6>
 
     </div>
     <script src="js/map.js"></script>
     <script src="js/client.js"></script>
     <script>
         window.onload = function() {
+
+            $('#addressForm').on('submit', function(e) {
+                e.preventDefault();
+                let data = document.querySelector('#addressForm').joinServerIP.value;
+                setServer(data);
+            });
+            $('#setSkinColor').on('submit', function(e) {
+                e.preventDefault();
+                let data = document.querySelector('#setSkinColor').skinColor.value;
+                setSkinColor(data);
+            });
+
             // 链接 432 ws
-            setServer();
+            setServer(localStorage.getItem("lastServerAddress"));
             var startGameId = document.getElementById("startGame");
             var enterGameId = document.getElementById("enterGame");
             var gameId = document.getElementById("gameId");

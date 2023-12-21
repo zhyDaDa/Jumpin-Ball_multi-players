@@ -73,13 +73,14 @@ a {
 
 h6 {
     display: flex;
+    line-height: 1.5em;
 }
 
 #tipBoard {
     display: block;
     width: 320px;
     height: 385px;
-    background-color: #CCC8D5D2;
+    background-color: #CCC8D5BB;
     color: #333;
     border-radius: 12px;
     text-align: center;
@@ -89,4 +90,5 @@ h6 {
     left: 5px;
     top: 5px;
     z-index: 100;
+    padding: 1rem;
 }
