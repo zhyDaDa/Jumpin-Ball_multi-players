@@ -57,6 +57,7 @@ var Clarity = function() {
     };
 
     this.player = {
+        colour: "#111",
 
         loc: {
             x: 0,
