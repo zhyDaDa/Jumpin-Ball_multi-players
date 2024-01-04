@@ -45,6 +45,7 @@ wss.on('connection', function(ws) {
                 y: 0
             },
 
+            name: "defaultPlayer",
             colour: '#000',
 
             can_jump: true,
@@ -71,12 +72,10 @@ wss.on('connection', function(ws) {
             state: {
                 hp: 30,
                 mp: 10,
+                hp_max: 30,
+                mp_max: 10,
                 money: 0,
             },
-        },
-        info: {
-            name: "",
-            colour: "#000",
         },
         ws: ws
     }
@@ -95,7 +94,7 @@ wss.on('connection', function(ws) {
         data = JSON.parse(message);
         // 更新玩家字典中的数据
         playerDic[ip].key = deepCopy(data.key);
-        playerDic[ip].info.colour = data.color;
+        playerDic[ip].chara.name = data.name;
         playerDic[ip].chara.colour = data.color;
     });
 

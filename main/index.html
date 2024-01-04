@@ -30,9 +30,15 @@
             <h6 id="h6_3">尚未连接服务器</h6>
             <h6 id="h6_4">服务器信号延迟: &nbsp;<span style="color: darkgreen;" id="serverDelay">null</span>&nbsp;ms</h6>
             <hr style="margin:1rem 0;">
-            <h6 id="h6_5">输入皮肤颜色:
+            <h6 id="h6_5">输入皮肤颜色: &nbsp;
                 <form action="javascript:void(0);" id="setSkinColor">
                     <input type="text" name="skinColor" id="skinColor" placeholder="带#的十六进制或英文" />
+                    <input type="submit" value="设置" />
+                </form>
+            </h6>
+            <h6 id="h6_5">输入玩家名称: &nbsp;
+                <form action="javascript:void(0);" id="setPlayerName">
+                    <input type="text" name="setPlayerName" id="setPlayerName" placeholder=`字数不能超过${nameMaxLength}字` />
                     <input type="submit" value="设置" />
                 </form>
             </h6>
@@ -55,6 +61,11 @@
                 e.preventDefault();
                 let data = document.querySelector('#setSkinColor').skinColor.value;
                 setSkinColor(data);
+            });
+            $('#setPlayerName').on('submit', function(e) {
+                e.preventDefault();
+                let data = document.querySelector('#setPlayerName').setPlayerName.value;
+                setPlayerName(data);
             });
 
             // 链接 432 ws

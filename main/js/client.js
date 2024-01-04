@@ -3,6 +3,10 @@ const h6_2 = document.getElementById("h6_2");
 const h6_3 = document.getElementById("h6_3");
 
 const BGColor = '#333';
+const nameMaxLength = 15;
+const HPBarColor = '#ff5555aa';
+const HPBarWidth = 30;
+const HPBarHeight = 4;
 
 function setServer(serverAddress) {
     serverAddress = serverAddress || "ws://127.0.0.1:432";
@@ -17,12 +21,14 @@ function setServer(serverAddress) {
         // alert("成功连接到服务器");
         document.querySelector("#h6_3").innerHTML = `<font color="green"> 成功连接到服务器 </font>`
     };
+    /* div: 接收消息 */
     socket.onmessage = function(e) {
         let data = JSON.parse(e.data);
         // console.log(data);
-        game.draw(ctx, data.map_id, data.players, data.camera);
         // 计算延迟
         let latency = Date.now() - data.time;
+        // game.draw(ctx, data.map_id, data.players, data.camera);
+        game.draw(ctx, data.map_id, data.players, data.players[data.index].loc);
         document.querySelector("#serverDelay").innerText = latency;
     };
     socket.onclose = function() {
@@ -32,7 +38,11 @@ function setServer(serverAddress) {
 }
 
 function tellServer() {
-    let message = JSON.stringify({ key: game.key, color: playerColour || '#FF9900' });
+    let message = JSON.stringify({
+        key: game.key,
+        color: playerColour || '#FF9900',
+        name: playerName || "player_A",
+    });
     console.log(`发送给服务器: ${message}`);
     socket.send(message);
 }
@@ -620,7 +630,6 @@ Clarity.prototype.draw_all_players = function(context, players) {
 }
 
 Clarity.prototype.draw_player = function(context, player) {
-
     context.fillStyle = player.colour || "oranges";
 
     context.beginPath();
@@ -634,6 +643,32 @@ Clarity.prototype.draw_player = function(context, player) {
     );
 
     context.fill();
+    context.closePath();
+
+
+    // 计算文字宽度
+    let fontSize = 12;
+    let span = fontSize * nameMaxLength / 2;
+    context.lineWidth = 1;
+    context.font = fontSize + "px Georgia";
+    let textWidth = context.measureText(player.name).width;
+    // 为了让文字更清晰, 在文字下方画一个白色矩形
+    context.beginPath();
+    context.fillStyle = "#ffffff66";
+    context.fillRect(player.loc.x - this.camera.x + this.tile_size / 2 - span / 2, player.loc.y - this.camera.y - this.tile_size / 2 - fontSize - 1, span, fontSize + 2);
+    // context.closePath();
+    // 居中绘制玩家名字, 黑字白色描边
+    context.fillStyle = "black";
+    // x方向正中间是 loc.x - camera.x + 半个格子
+    // y方向正中间是 loc.y - camera.y + 半个格子
+    // 向左挪半个文字宽度, 向上挪一个格子
+    context.fillText(player.name, player.loc.x - this.camera.x + this.tile_size / 2 - textWidth / 2, player.loc.y - this.camera.y - this.tile_size / 2);
+    context.closePath();
+
+    // 在最上面绘制血条
+    context.beginPath();
+    context.fillStyle = HPBarColor;
+    context.fillRect(player.loc.x - this.camera.x + this.tile_size / 2 - span / 2, player.loc.y - this.camera.y - this.tile_size / 2 - fontSize - HPBarHeight, span * player.state.hp / player.state.hp_max, HPBarHeight);
 };
 
 Clarity.prototype.update = function() {
@@ -718,7 +753,13 @@ Clarity.prototype.draw = function(context, map_id, players, camera) {
 
 function setSkinColor(color) {
     playerColour = color;
-    tellServer()
+    tellServer();
+}
+
+function setPlayerName(name) {
+    // 截取前nameMaxLength个字符
+    playerName = name.substr(0, nameMaxLength);
+    tellServer();
 }
 
 
@@ -733,6 +774,7 @@ game.set_viewport(canvas.width, canvas.height);
 
 var tipBoard = document.getElementById("tipBoard");
 var playerColour = '#FF9900';
+var playerName = "player_A";
 game.load_map(0);
 let trapClock = 0;
 
