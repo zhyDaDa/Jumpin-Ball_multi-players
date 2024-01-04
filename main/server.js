@@ -16,11 +16,11 @@ wss.on('listening', function() {
     console.log(wss.address());
 });
 
-var playerDic = {};
+const playerDic = {};
 
 wss.on('connection', function(ws) {
 
-    console.log('client connected');
+    console.log(`client ${ws._socket.remoteAddress} connected`);
 
     // 在playerDic中记录
     var ip = ws._socket.remoteAddress;
@@ -33,7 +33,7 @@ wss.on('connection', function(ws) {
             key_j: false,
             key_k: false
         },
-        player: {
+        chara: {
 
             loc: {
                 x: 0,
@@ -60,16 +60,31 @@ wss.on('connection', function(ws) {
             dash_ability: true,
             float_ability: true,
 
-            deaths: { red: 0, drop: 0, all: function() { return this.red + this.drop; } }
+            buff: [{}],
+            equipment: {
+                club: {},
+                heart: {},
+                spade: {},
+                diamond: {},
+            },
+
+            state: {
+                hp: 30,
+                mp: 10,
+                money: 0,
+            },
         },
-        name: "",
+        info: {
+            name: "",
+            colour: "#000",
+        },
         ws: ws
     }
 
     playerDic[ip].name = ip + "";
-    playerDic[ip].player.loc.x = game.current_map.player.x;
-    playerDic[ip].player.loc.y = game.current_map.player.y;
-    playerDic[ip].player.colour = game.current_map.player.colour;
+    playerDic[ip].chara.loc.x = game.current_map.player.x;
+    playerDic[ip].chara.loc.y = game.current_map.player.y;
+    playerDic[ip].chara.colour = game.current_map.player.colour;
 
     // 为其设置监听
     ws.on('message', function(message) {
@@ -80,8 +95,15 @@ wss.on('connection', function(ws) {
         data = JSON.parse(message);
         // 更新玩家字典中的数据
         playerDic[ip].key = deepCopy(data.key);
-        playerDic[ip].player.colour = data.color;
+        playerDic[ip].info.colour = data.color;
+        playerDic[ip].chara.colour = data.color;
+    });
 
+    // 链接关闭
+    ws.on('close', function() {
+        console.log(`client ${ws._socket.remoteAddress} disconnected`);
+        // 删除playerDic中的数据
+        delete playerDic[ip];
     });
 });
 
@@ -208,71 +230,71 @@ class GAME {
 
     teleport_player = function(player, x, y) {
         // 单纯意义上的传送只会改变位置
-        player.player.loc.x = x;
-        player.player.loc.y = y;
-        // player.player.vel.x = 0;
-        // player.player.vel.y = 0;
-        // player.player.can_jump = true;
-        // player.player.can_doublejump = true;
-        // player.player.can_dash = true;
-        // player.player.can_float = true;
-        // player.player.glide_ability = true;
-        // player.player.dash_ability = true;
+        player.chara.loc.x = x;
+        player.chara.loc.y = y;
+        // player.chara.vel.x = 0;
+        // player.chara.vel.y = 0;
+        // player.chara.can_jump = true;
+        // player.chara.can_doublejump = true;
+        // player.chara.can_dash = true;
+        // player.chara.can_float = true;
+        // player.chara.glide_ability = true;
+        // player.chara.dash_ability = true;
     }
 
     teleport_player_to_savePoint = function(player) {
         // 存档点就是地图默认玩家位置
         this.teleport_player(player, this.current_map.player.x, this.current_map.player.y);
-        player.player.vel.x = 0;
-        player.player.vel.y = 0;
-        player.player.can_jump = true;
-        player.player.can_doublejump = true;
-        player.player.can_dash = true;
-        player.player.can_float = true;
-        player.player.glide_ability = true;
-        player.player.dash_ability = true;
+        player.chara.vel.x = 0;
+        player.chara.vel.y = 0;
+        player.chara.can_jump = true;
+        player.chara.can_doublejump = true;
+        player.chara.can_dash = true;
+        player.chara.can_float = true;
+        player.chara.glide_ability = true;
+        player.chara.dash_ability = true;
     }
 
     move_player = function(player) {
 
         var _this = (this);
 
-        var tX = player.player.loc.x + player.player.vel.x;
-        var tY = player.player.loc.y + player.player.vel.y;
+        var tX = player.chara.loc.x + player.chara.vel.x;
+        var tY = player.chara.loc.y + player.chara.vel.y;
 
         var offset = Math.round((this.tile_size / 2) - 1);
 
         var tile = this.get_tile(
-            Math.round(player.player.loc.x / this.tile_size),
-            Math.round(player.player.loc.y / this.tile_size)
+            Math.round(player.chara.loc.x / this.tile_size),
+            Math.round(player.chara.loc.y / this.tile_size)
         );
 
         if (tile.gravity) {
 
-            player.player.vel.x += tile.gravity.x;
-            player.player.vel.y += tile.gravity.y;
+            player.chara.vel.x += tile.gravity.x;
+            player.chara.vel.y += tile.gravity.y;
 
         } else {
 
-            player.player.vel.x += _this.current_map.gravity.x;
-            player.player.vel.y += _this.current_map.gravity.y;
+            player.chara.vel.x += _this.current_map.gravity.x;
+            player.chara.vel.y += _this.current_map.gravity.y;
         }
 
         if (tile.friction) {
 
-            player.player.vel.x *= tile.friction.x;
-            player.player.vel.y *= tile.friction.y;
+            player.chara.vel.x *= tile.friction.x;
+            player.chara.vel.y *= tile.friction.y;
         }
 
         var t_y_up = Math.floor(tY / this.tile_size);
         var t_y_down = Math.ceil(tY / this.tile_size);
-        var y_near1 = Math.round((player.player.loc.y - offset) / this.tile_size);
-        var y_near2 = Math.round((player.player.loc.y + offset) / this.tile_size);
+        var y_near1 = Math.round((player.chara.loc.y - offset) / this.tile_size);
+        var y_near2 = Math.round((player.chara.loc.y + offset) / this.tile_size);
 
         var t_x_left = Math.floor(tX / this.tile_size);
         var t_x_right = Math.ceil(tX / this.tile_size);
-        var x_near1 = Math.round((player.player.loc.x - offset) / this.tile_size);
-        var x_near2 = Math.round((player.player.loc.x + offset) / this.tile_size);
+        var x_near1 = Math.round((player.chara.loc.x - offset) / this.tile_size);
+        var x_near2 = Math.round((player.chara.loc.x + offset) / this.tile_size);
 
         var top1 = this.get_tile(x_near1, t_y_up);
         var top2 = this.get_tile(x_near2, t_y_up);
@@ -290,28 +312,28 @@ class GAME {
 
         if (tile.jump && player.jump_switch > 15) {
 
-            player.player.can_jump = true;
-            player.player.doublejumpFlag = false;
-            player.player.can_doublejump = true;
+            player.chara.can_jump = true;
+            player.chara.doublejumpFlag = false;
+            player.chara.can_doublejump = true;
 
-            player.player.can_dash = true;
+            player.chara.can_dash = true;
 
             player.jump_switch = 0;
 
         } else player.jump_switch++;
 
-        player.player.vel.x = Math.min(Math.max(player.player.vel.x, -_this.current_map.vel_limit.x), _this.current_map.vel_limit.x);
-        player.player.vel.y = Math.min(Math.max(player.player.vel.y, -_this.current_map.vel_limit.y), _this.current_map.vel_limit.y);
+        player.chara.vel.x = Math.min(Math.max(player.chara.vel.x, -_this.current_map.vel_limit.x), _this.current_map.vel_limit.x);
+        player.chara.vel.y = Math.min(Math.max(player.chara.vel.y, -_this.current_map.vel_limit.y), _this.current_map.vel_limit.y);
 
         /* dash技能处理 */
         if (left1.solid || left2.solid || right1.solid || right2.solid || left3.solid || left4.solid || right3.solid || right4.solid) { player.dash_switch = 0; }
         if (player.dash_switch > 0) {
-            player.player.vel.x = player.key.left ? -10 : 10;
+            player.chara.vel.x = player.key.left ? -10 : 10;
             player.dash_switch--;
         }
 
         /* float技能处理 */
-        if (player.player.float_ability && player.player.can_float && player.key.key_k == true) {
+        if (player.chara.float_ability && player.chara.can_float && player.key.key_k == true) {
             for (var p = -3; p < 3; p++) {
                 for (var q = -2; q < 4; q++) {
                     var localTile = this.get_tile(t_x_left + q, t_y_up + p);
@@ -321,37 +343,37 @@ class GAME {
                     //colour: '#EADBC5', solid: 0, gravity: { x: 0, y: -0.3 }
                 }
             }
-            player.player.can_float = false;
-            player.player.can_dash = true;
-            player.player.can_jump = true;
-            player.player.can_doublejump = true;
-            player.player.doublejumpFlag = false;
+            player.chara.can_float = false;
+            player.chara.can_dash = true;
+            player.chara.can_jump = true;
+            player.chara.can_doublejump = true;
+            player.chara.doublejumpFlag = false;
         }
 
         /* 坠落判断 */
-        if (player.player.loc.y > _this.current_map.height_p + 100) {
+        if (player.chara.loc.y > _this.current_map.height_p + 100) {
             // player坠落死亡
-            player.player.deaths.drop++;
+            player.chara.deaths.drop++;
             // player回到重生点
             this.teleport_player_to_savePoint(player);
         }
 
-        player.player.loc.x += player.player.vel.x;
-        player.player.loc.y += player.player.vel.y;
+        player.chara.loc.x += player.chara.vel.x;
+        player.chara.loc.y += player.chara.vel.y;
 
-        player.player.vel.x *= .9;
+        player.chara.vel.x *= .9;
 
         if (left1.solid || left2.solid || right1.solid || right2.solid) {
 
             /* 解决重叠 */
 
-            while (this.get_tile(Math.floor(player.player.loc.x / this.tile_size), y_near1).solid ||
-                this.get_tile(Math.floor(player.player.loc.x / this.tile_size), y_near2).solid)
-                player.player.loc.x += 0.1;
+            while (this.get_tile(Math.floor(player.chara.loc.x / this.tile_size), y_near1).solid ||
+                this.get_tile(Math.floor(player.chara.loc.x / this.tile_size), y_near2).solid)
+                player.chara.loc.x += 0.1;
 
-            while (this.get_tile(Math.ceil(player.player.loc.x / this.tile_size), y_near1).solid ||
-                this.get_tile(Math.ceil(player.player.loc.x / this.tile_size), y_near2).solid)
-                player.player.loc.x -= 0.1;
+            while (this.get_tile(Math.ceil(player.chara.loc.x / this.tile_size), y_near1).solid ||
+                this.get_tile(Math.ceil(player.chara.loc.x / this.tile_size), y_near2).solid)
+                player.chara.loc.x -= 0.1;
 
             /* 瓷砖反弹 */
 
@@ -362,7 +384,7 @@ class GAME {
             if (right1.solid && right1.bounce > bounce) bounce = right1.bounce;
             if (right2.solid && right2.bounce > bounce) bounce = right2.bounce;
 
-            player.player.vel.x *= -bounce || 0;
+            player.chara.vel.x *= -bounce || 0;
 
         }
 
@@ -370,13 +392,13 @@ class GAME {
 
             /* 解决重叠 */
 
-            while (this.get_tile(x_near1, Math.floor(player.player.loc.y / this.tile_size)).solid ||
-                this.get_tile(x_near2, Math.floor(player.player.loc.y / this.tile_size)).solid)
-                player.player.loc.y += 0.1;
+            while (this.get_tile(x_near1, Math.floor(player.chara.loc.y / this.tile_size)).solid ||
+                this.get_tile(x_near2, Math.floor(player.chara.loc.y / this.tile_size)).solid)
+                player.chara.loc.y += 0.1;
 
-            while (this.get_tile(x_near1, Math.ceil(player.player.loc.y / this.tile_size)).solid ||
-                this.get_tile(x_near2, Math.ceil(player.player.loc.y / this.tile_size)).solid)
-                player.player.loc.y -= 0.1;
+            while (this.get_tile(x_near1, Math.ceil(player.chara.loc.y / this.tile_size)).solid ||
+                this.get_tile(x_near2, Math.ceil(player.chara.loc.y / this.tile_size)).solid)
+                player.chara.loc.y -= 0.1;
 
             /* 瓷砖反弹 */
 
@@ -387,16 +409,16 @@ class GAME {
             if (bottom1.solid && bottom1.bounce > bounce) bounce = bottom1.bounce;
             if (bottom2.solid && bottom2.bounce > bounce) bounce = bottom2.bounce;
 
-            player.player.vel.y *= -bounce || 0;
+            player.chara.vel.y *= -bounce || 0;
 
             if ((bottom1.solid || bottom2.solid) && !tile.jump) {
 
-                player.player.on_floor = true;
-                player.player.can_jump = true;
-                player.player.can_doublejump = true;
-                player.player.doublejumpFlag = false;
+                player.chara.on_floor = true;
+                player.chara.can_jump = true;
+                player.chara.can_doublejump = true;
+                player.chara.doublejumpFlag = false;
 
-                player.player.can_dash = true;
+                player.chara.can_dash = true;
 
             }
 
@@ -417,47 +439,47 @@ class GAME {
         // 负责通过玩家按键来确定当前的速度和技能使用
         var _this = (this);
 
-        // console.log(`player update\nposition: (${player.player.loc.x},${player.player.loc.y}); velocity: (${player.player.vel.x},${player.player.vel.y})`);
+        // console.log(`player update\nposition: (${player.chara.loc.x},${player.chara.loc.y}); velocity: (${player.chara.vel.x},${player.chara.vel.y})`);
 
         if (player.key.left) {
 
-            if (player.player.vel.x > -_this.current_map.vel_limit.x)
-                player.player.vel.x -= _this.current_map.movement_speed.left;
+            if (player.chara.vel.x > -_this.current_map.vel_limit.x)
+                player.chara.vel.x -= _this.current_map.movement_speed.left;
         }
         if (player.key.up) {
-            if (player.player.can_jump && !player.player.doublejumpFlag && player.player.can_doublejump && player.player.vel.y > -_this.current_map.vel_limit.y) {
+            if (player.chara.can_jump && !player.chara.doublejumpFlag && player.chara.can_doublejump && player.chara.vel.y > -_this.current_map.vel_limit.y) {
 
-                player.player.vel.y -= _this.current_map.movement_speed.jump;
-                player.player.can_jump = false;
+                player.chara.vel.y -= _this.current_map.movement_speed.jump;
+                player.chara.can_jump = false;
 
                 player.jump_switch = 0;
             }
-            if (player.player.doublejump_ability && !player.player.can_jump && player.player.doublejumpFlag && player.player.can_doublejump && player.player.vel.y > -_this.current_map.vel_limit.y && player.jump_switch > 20) {
+            if (player.chara.doublejump_ability && !player.chara.can_jump && player.chara.doublejumpFlag && player.chara.can_doublejump && player.chara.vel.y > -_this.current_map.vel_limit.y && player.jump_switch > 20) {
 
-                player.player.vel.y *= 0.8;
-                player.player.vel.y -= _this.current_map.movement_speed.jump;
-                player.player.can_doublejump = false;
+                player.chara.vel.y *= 0.8;
+                player.chara.vel.y -= _this.current_map.movement_speed.jump;
+                player.chara.can_doublejump = false;
             }
         } else {
-            if (!player.player.can_jump && !player.player.doublejumpFlag && player.player.can_doublejump || player.player.can_jump && player.player.doublejumpFlag && player.player.can_doublejump) player.player.doublejumpFlag = true;
+            if (!player.chara.can_jump && !player.chara.doublejumpFlag && player.chara.can_doublejump || player.chara.can_jump && player.chara.doublejumpFlag && player.chara.can_doublejump) player.chara.doublejumpFlag = true;
             player.jump_switch++;
         }
         if (player.key.right) {
 
-            if (player.player.vel.x < _this.current_map.vel_limit.x)
-                player.player.vel.x += _this.current_map.movement_speed.left;
+            if (player.chara.vel.x < _this.current_map.vel_limit.x)
+                player.chara.vel.x += _this.current_map.movement_speed.left;
         }
-        if (player.key.down && player.player.glide_ability) {
+        if (player.key.down && player.chara.glide_ability) {
 
-            player.player.vel.y *= 0.8;
+            player.chara.vel.y *= 0.8;
         }
-        if (player.key.key_j && player.player.dash_ability && player.player.can_dash) {
-            player.player.can_dash = false;
+        if (player.key.key_j && player.chara.dash_ability && player.chara.can_dash) {
+            player.chara.can_dash = false;
             player.dash_switch = 5;
         }
-        // if (player.key.key_k && player.player.float_ability && player.player.can_float) {
-        //     player.player.can_float = false;
-        // }
+        if (player.key.key_k && player.chara.float_ability && player.chara.can_float) {
+            player.chara.can_float = false;
+        }
 
         this.move_player(player);
     }
@@ -473,15 +495,18 @@ class GAME {
         let _this = (this);
         let data = {
             map_id: _this.current_map.mapId,
-            players: Object.values(playerDic).map((player) => player.player),
+            players: Object.values(playerDic).map((player) => player.chara),
             camera: {},
+            index: 0,
             time: new Date().getTime()
         }
+        let keyList = Object.keys(playerDic);
         wss.clients.forEach(function(client) {
             // 获取client的ip
             let thisIp = client._socket.remoteAddress;
-            data.camera.x = playerDic[thisIp].player.loc.x;
-            data.camera.y = playerDic[thisIp].player.loc.y;
+            // data.camera.x = playerDic[thisIp].player.loc.x;
+            // data.camera.y = playerDic[thisIp].player.loc.y;
+            data.index = keyList.indexOf(thisIp);
             let message = JSON.stringify(data);
             client.send(message);
         })
