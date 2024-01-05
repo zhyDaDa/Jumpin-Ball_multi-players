@@ -7,7 +7,7 @@ const nameMaxLength = 15;
 const HPBarColor = '#ff5555aa';
 const HPBarWidth = 30;
 const HPBarHeight = 4;
-let zoomIndex = 0.9;
+let zoomIndex = 1.2;
 
 function setServer(serverAddress) {
     serverAddress = serverAddress || "ws://127.0.0.1:432";
@@ -31,6 +31,7 @@ function setServer(serverAddress) {
         // 计算延迟
         let receiveTime = Date.now();
         let latency = receiveTime - data.time;
+        game.player = deepCopy(data.players[0]);
         game.draw(ctx, data.map_id, data.players, data.players[0].loc);
         let renderLatency = Date.now() - receiveTime;
         document.querySelector("#serverDelay").innerText = latency;
@@ -75,6 +76,8 @@ var Clarity = function() {
         x: 0,
         y: 0
     };
+
+    this.camera_movement_limit = { x: 10, y: 8 };
 
     this.key = {
         left: false,
@@ -276,26 +279,12 @@ Clarity.prototype.set_map = function(map) {
     this.current_map.width_p = this.current_map.width * this.tile_size;
     this.current_map.height_p = this.current_map.height * this.tile_size;
 
-    this.player.loc.x = getMapSave_x(this.current_map) * this.tile_size || 0;
-    this.player.loc.y = getMapSave_y(this.current_map) * this.tile_size || 0;
-    this.player.colour = map.player.colour || '#000';
-
     this.key.left = false;
     this.key.up = false;
     this.key.right = false;
     this.key.down = false;
     this.key.key_j = false;
     this.key.key_k = false;
-
-    this.camera = {
-        x: this.player.loc.x - 900,
-        y: this.player.loc.y - 800
-    };
-
-    this.player.vel = {
-        x: 0,
-        y: 0
-    };
 
     this.log('Successfully loaded map data.');
 
@@ -324,7 +313,7 @@ Clarity.prototype.draw_map = function(context) {
 
     // 在最底层画出地图名称
     context.fillStyle = "white";
-    context.font = canvas.width / 10 + "px Segoe Script";
+    context.font = canvas.width / 12 * zoomIndex + "px Segoe Script";
     context.strokeStyle = "#ffffff66";
     // 白色描边
     context.lineWidth = 6;
@@ -409,13 +398,19 @@ Clarity.prototype.update = function() {
     this.update_player();
 };
 
-Clarity.prototype.update_camera = function(target_x, target_y) {
+Clarity.prototype.update_camera = function(target_x, target_y, direct) {
     var c_x = Math.round(target_x - this.viewport.x / 2 + this.tile_size / 2);
     var c_y = Math.round(target_y - this.viewport.y / 2 + this.tile_size / 2);
     var x_dif = Math.abs(c_x - this.camera.x);
     var y_dif = Math.abs(c_y - this.camera.y);
 
-    if (x_dif > 8) {
+    if (direct) {
+        this.camera.x = c_x;
+        this.camera.y = c_y;
+        return;
+    }
+
+    if (x_dif > this.camera_movement_limit.x) {
 
         var mag = Math.round(Math.max(1, x_dif * 0.1));
 
@@ -440,7 +435,7 @@ Clarity.prototype.update_camera = function(target_x, target_y) {
         }
     }
 
-    if (y_dif > 8) {
+    if (y_dif > this.camera_movement_limit.y) {
 
         var mag = Math.round(Math.max(1, y_dif * 0.1));
 
@@ -481,7 +476,7 @@ Clarity.prototype.draw = function(context, map_id, players, camera) {
     this.draw_all_players(context, players);
 
     // 调整相机位置
-    this.update_camera(camera.x, camera.y);
+    this.update_camera(camera.x, camera.y, false);
 
     // 画出相机
     // context.fillStyle = '#f00';
@@ -520,6 +515,8 @@ function setViewZoom(zoomIndex) {
     canvas.width = w / zoomIndex;
     canvas.height = h / zoomIndex;
     game.set_viewport(canvas.width, canvas.height);
+    // 防止camera瞬时偏移
+    game.update_camera(game.player.loc.x, game.player.loc.y, true);
 }
 setViewZoom(zoomIndex);
 
@@ -534,7 +531,7 @@ let anim;
 /* 将viewport限制在地图的范围内*/
 game.limit_viewport = false;
 /* camera开始移动的距离差 */
-game.camera.movement_limit = { x: 48, y: 8 };
+game.camer_movement_limit = { x: 10, y: 8 };
 
 const Loop = function() {
 

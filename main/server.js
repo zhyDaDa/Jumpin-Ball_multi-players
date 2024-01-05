@@ -23,7 +23,7 @@ wss.on('connection', function(ws) {
 
     console.log(`client ${ws._socket.remoteAddress} connected`);
 
-    // 在playerDic中记录
+    // div: 在playerDic中记录
     let ip = ws._socket.remoteAddress;
     playerDic[ip] = {
         key: {
@@ -79,6 +79,7 @@ wss.on('connection', function(ws) {
                 money: 0,
             },
             ip: ip,
+
         },
         ws: ws
     }
