@@ -1,5 +1,9 @@
 console.log('Server.js 开始运行');
 
+
+const FALLEN_DAMAGE = 10; // 坠落伤害
+
+
 const fs = require('fs');
 const WebSocketServer = require('ws').Server;
 // const tween = require('tween.js');
@@ -78,7 +82,10 @@ wss.on('connection', function(ws) {
                 mp_max: 10,
                 money: 0,
                 condtion: "normal",
-                timer: 0,
+                timer_begin: 0,
+                timer_current: 0,
+                timer_end: 0,
+                // reviveCooldown: 3000,  // 考虑到一些角色可能复活时间不同
             },
             ip: ip,
         },
@@ -284,9 +291,11 @@ class GAME {
         if (player.chara.state.condtion != "normal") {
             switch (player.chara.state.condtion) {
                 case "fallen":
-                    if (player.chara.state.timer < new Date().getTime()) {
+                    if (player.chara.state.timer_current > player.chara.state.timer_end) {
                         player.chara.state.condtion = "normal";
                         this.teleport_player_to_savePoint(player);
+                    } else {
+                        player.chara.state.timer_current = new Date().getTime();
                     }
                     break;
                 default:
@@ -396,9 +405,11 @@ class GAME {
         /* 坠落判断 */
         if (player.chara.loc.y > current_map.height_p + 100) {
             // player坠落死亡
-            player.chara.state.hp -= 2;
+            player.chara.state.hp -= FALLEN_DAMAGE;
             player.chara.state.condtion = "fallen";
-            player.chara.state.timer = 3000 + new Date().getTime();
+            player.chara.state.timer_end = this.maps[player.chara.current_mapId].reviveCooldown + new Date().getTime();
+            player.chara.state.timer_begin = new Date().getTime();
+            player.chara.state.timer_current = new Date().getTime();
             return;
         }
 

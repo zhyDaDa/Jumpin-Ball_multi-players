@@ -8,6 +8,7 @@ const HPBarColor = '#ff5555aa';
 const HPBarWidth = 30;
 const HPBarHeight = 4;
 let zoomIndex = 1.2;
+const player_info_fontSize = 12;
 
 function setServer(serverAddress) {
     serverAddress = serverAddress || "ws://127.0.0.1:432";
@@ -352,6 +353,7 @@ Clarity.prototype.draw_all_players = function(context, players) {
 }
 
 Clarity.prototype.draw_player = function(context, player) {
+    let span = player_info_fontSize * nameMaxLength / 2; // 显示名字的矩形的宽度
 
     // 绘制圆球本体
     context.fillStyle = player.colour || "oranges";
@@ -389,6 +391,16 @@ Clarity.prototype.draw_player = function(context, player) {
         context.stroke();
         context.setLineDash([]);
         context.closePath();
+
+        // 在下方画出剩余复活时间
+        context.beginPath();
+        context.fillStyle = "white";
+        context.fillRect(
+            player.loc.x - this.camera.x + this.tile_size / 2 - span / 4,
+            player.loc.y - this.camera.y + this.tile_size + 8,
+            span / 2 * (player.state.timer_current - player.state.timer_begin) / (player.state.timer_end - player.state.timer_begin),
+            HPBarHeight);
+        context.closePath();
     }
 
     // 动态特效_悬浮
@@ -413,29 +425,35 @@ Clarity.prototype.draw_player = function(context, player) {
 
 
     // 绘制玩家的名字
-    let fontSize = 12;
-    let span = fontSize * nameMaxLength / 2;
     context.lineWidth = 1;
-    context.font = fontSize + "px Georgia";
+    context.font = player_info_fontSize + "px Georgia";
     let textWidth = context.measureText(player.name).width;
     // 为了让文字更清晰, 在文字下方画一个白色矩形
     context.beginPath();
     context.fillStyle = "#ffffff66";
-    context.fillRect(player.loc.x - this.camera.x + this.tile_size / 2 - span / 2, player.loc.y - this.camera.y - this.tile_size / 2 - fontSize - 1, span, fontSize + 2);
+    context.fillRect(player.loc.x - this.camera.x + this.tile_size / 2 - span / 2, player.loc.y - this.camera.y - this.tile_size / 2 - player_info_fontSize - 1, span, player_info_fontSize + 2);
     // context.closePath();
     // 居中绘制玩家名字, 黑字白色描边
     context.fillStyle = "black";
     // x方向正中间是 loc.x - camera.x + 半个格子
     // y方向正中间是 loc.y - camera.y + 半个格子
     // 向左挪半个文字宽度, 向上挪一个格子
-    context.fillText(player.name, player.loc.x - this.camera.x + this.tile_size / 2 - textWidth / 2, player.loc.y - this.camera.y - this.tile_size / 2);
+    context.fillText(
+        player.name,
+        player.loc.x - this.camera.x + this.tile_size / 2 - textWidth / 2,
+        player.loc.y - this.camera.y - this.tile_size / 2);
     context.closePath();
 
 
     // 在最上面绘制血条
     context.beginPath();
     context.fillStyle = HPBarColor;
-    context.fillRect(player.loc.x - this.camera.x + this.tile_size / 2 - span / 2, player.loc.y - this.camera.y - this.tile_size / 2 - fontSize - HPBarHeight, span * player.state.hp / player.state.hp_max, HPBarHeight);
+    context.fillRect(
+        player.loc.x - this.camera.x + this.tile_size / 2 - span / 2,
+        player.loc.y - this.camera.y - this.tile_size / 2 - player_info_fontSize - HPBarHeight,
+        span * player.state.hp / player.state.hp_max,
+        HPBarHeight);
+    context.closePath();
 };
 
 Clarity.prototype.update = function() {
