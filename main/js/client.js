@@ -27,8 +27,7 @@ function setServer(serverAddress) {
         // console.log(data);
         // 计算延迟
         let latency = Date.now() - data.time;
-        // game.draw(ctx, data.map_id, data.players, data.camera);
-        game.draw(ctx, data.map_id, data.players, data.players[data.index].loc);
+        game.draw(ctx, data.map_id, data.players, data.players[0].loc);
         document.querySelector("#serverDelay").innerText = latency;
     };
     socket.onclose = function() {
