@@ -9,6 +9,9 @@ const HPBarWidth = 30;
 const HPBarHeight = 4;
 let zoomIndex = 1.2;
 const player_info_fontSize = 12;
+const cursor_size = 20;
+
+/* div: 服务器连接 */
 
 function setServer(serverAddress) {
     serverAddress = serverAddress || "ws://127.0.0.1:432";
@@ -57,9 +60,9 @@ function tellServer() {
     socket.send(message);
 }
 
-/* Clarity 引擎 */
+/* div: Game 引擎 */
 
-var Clarity = function() {
+var Game = function() {
 
     this.alert_errors = false;
     this.log_info = true;
@@ -85,9 +88,15 @@ var Clarity = function() {
         right: false,
         up: false,
         down: false,
+        space: false,
         key_j: false,
-        key_k: false
+        key_k: false,
+        mouse_l: false,
+        mouse_m: false,
+        mouse_r: false,
     };
+
+    this.mouse = { x: 0, y: 0 };
 
     this.player = {
         colour: "#111",
@@ -120,26 +129,29 @@ var Clarity = function() {
 
     window.onkeydown = this.keydown.bind(this);
     window.onkeyup = this.keyup.bind(this);
+    window.onmousemove = this.mouseMove.bind(this);
+    window.onmousedown = this.mouseDown.bind(this);
+    window.onmouseup = this.mouseUp.bind(this);
 };
 
-Clarity.prototype.error = function(message) {
+Game.prototype.error = function(message) {
 
     if (this.alert_errors) alert(message);
     if (this.log_info) console.log(message);
 };
 
-Clarity.prototype.log = function(message) {
+Game.prototype.log = function(message) {
 
     if (this.log_info) console.log(message);
 };
 
-Clarity.prototype.set_viewport = function(x, y) {
+Game.prototype.set_viewport = function(x, y) {
 
     this.viewport.x = x;
     this.viewport.y = y;
 };
 
-Clarity.prototype.keydown = function(e) {
+Game.prototype.keydown = function(e) {
 
     var _this = this;
 
@@ -165,17 +177,11 @@ Clarity.prototype.keydown = function(e) {
         case 40:
             _this.key.down = true;
             break;
+        case 32: //space
+            _this.key.space = true;
+            break;
         case 83:
             _this.key.down = true;
-            break;
-        case 32:
-            if (_this.pauseFlag) {
-                Loop();
-                _this.pauseFlag = false;
-            } else {
-                cancelAnimationFrame(anim);
-                _this.pauseFlag = true;
-            }
             break;
         case 74: //j
             _this.key.key_j = true;
@@ -191,7 +197,7 @@ Clarity.prototype.keydown = function(e) {
     tellServer();
 };
 
-Clarity.prototype.keyup = function(e) {
+Game.prototype.keyup = function(e) {
 
     var _this = this;
 
@@ -220,6 +226,9 @@ Clarity.prototype.keyup = function(e) {
         case 83:
             _this.key.down = false;
             break;
+        case 32: //space
+            _this.key.space = false;
+            break;
         case 74: //j
             _this.key.key_j = false;
             break;
@@ -230,13 +239,51 @@ Clarity.prototype.keyup = function(e) {
     tellServer();
 };
 
-Clarity.prototype.load_map = function(map_id) {
+Game.prototype.mouseMove = function(e) {
+    const _this = (this);
+    // 光标位置是canvas坐标
+    _this.mouse = {
+        x: e.clientX / zoomIndex,
+        y: e.clientY / zoomIndex
+    };
+}
+
+Game.prototype.mouseDown = function(e) {
+    const _this = (this);
+    switch (e.button) {
+        case 0: //左键
+            _this.key.mouse_l = true;
+            break;
+        case 1: //中键
+            _this.key.mouse_m = true;
+            break;
+        case 2: //右键
+            _this.key.mouse_r = true;
+            break;
+    }
+}
+
+Game.prototype.mouseUp = function(e) {
+    const _this = (this);
+    switch (e.button) {
+        case 0: //左键
+            _this.key.mouse_l = false;
+            break;
+        case 1: //中键
+            _this.key.mouse_m = false;
+            break;
+        case 2: //右键
+            _this.key.mouse_r = false;
+            break;
+    }
+}
+
+Game.prototype.load_map = function(map_id) {
     // 从服务器加载地图
     socket_file.send(JSON.stringify({ map_id: map_id }));
 }
 
-
-Clarity.prototype.set_map = function(map) {
+Game.prototype.set_map = function(map) {
 
 
     if (typeof map === 'undefined' ||
@@ -292,12 +339,12 @@ Clarity.prototype.set_map = function(map) {
     return true;
 };
 
-Clarity.prototype.get_tile = function(x, y) {
+Game.prototype.get_tile = function(x, y) {
 
     return (this.current_map.data[y] && this.current_map.data[y][x]) ? deepCopy(this.current_map.data[y][x]) : 0;
 };
 
-Clarity.prototype.draw_tile = function(x, y, tile, context) {
+Game.prototype.draw_tile = function(x, y, tile, context) {
 
     if (!tile || !tile.colour) return;
 
@@ -310,7 +357,7 @@ Clarity.prototype.draw_tile = function(x, y, tile, context) {
     );
 };
 
-Clarity.prototype.draw_map = function(context) {
+Game.prototype.draw_map = function(context) {
 
     // 在最底层画出地图名称
     context.fillStyle = "white";
@@ -347,12 +394,12 @@ Clarity.prototype.draw_map = function(context) {
 
 };
 
-Clarity.prototype.draw_all_players = function(context, players) {
+Game.prototype.draw_all_players = function(context, players) {
     for (let player of players)
         this.draw_player(context, player);
 }
 
-Clarity.prototype.draw_player = function(context, player) {
+Game.prototype.draw_player = function(context, player) {
     let span = player_info_fontSize * nameMaxLength / 2; // 显示名字的矩形的宽度
 
     // 绘制圆球本体
@@ -380,6 +427,7 @@ Clarity.prototype.draw_player = function(context, player) {
         let c = 2 * Math.PI * radius;
         let sliceNum = 8;
         let interval = 480;
+        context.lineDashOffset = 0;
         context.setLineDash([c / sliceNum * 2 / 3, c / sliceNum / 3]);
         context.arc(
             player.loc.x + this.tile_size / 2 - this.camera.x,
@@ -456,12 +504,12 @@ Clarity.prototype.draw_player = function(context, player) {
     context.closePath();
 };
 
-Clarity.prototype.update = function() {
+Game.prototype.update = function() {
 
     this.update_player();
 };
 
-Clarity.prototype.update_camera = function(target_x, target_y, direct) {
+Game.prototype.update_camera = function(target_x, target_y, direct) {
     var c_x = Math.round(target_x - this.viewport.x / 2 + this.tile_size / 2);
     var c_y = Math.round(target_y - this.viewport.y / 2 + this.tile_size / 2);
     var x_dif = Math.abs(c_x - this.camera.x);
@@ -524,7 +572,58 @@ Clarity.prototype.update_camera = function(target_x, target_y, direct) {
     }
 };
 
-Clarity.prototype.draw = function(context, map_id, players, camera) {
+Game.prototype.draw_cursor = function(context) {
+    const _this = (this);
+
+    // 画出准星, 由四个矩形组成
+    context.beginPath();
+    context.strokeStyle = "white";
+    context.lineWidth = .2 * cursor_size;
+    context.moveTo(_this.mouse.x + .2 * cursor_size, _this.mouse.y);
+    context.lineTo(_this.mouse.x + 0.72 * cursor_size, _this.mouse.y);
+    context.moveTo(_this.mouse.x - .2 * cursor_size, _this.mouse.y);
+    context.lineTo(_this.mouse.x - 0.72 * cursor_size, _this.mouse.y);
+    context.moveTo(_this.mouse.x, _this.mouse.y + .2 * cursor_size);
+    context.lineTo(_this.mouse.x, _this.mouse.y + 0.72 * cursor_size);
+    context.moveTo(_this.mouse.x, _this.mouse.y - .2 * cursor_size);
+    context.lineTo(_this.mouse.x, _this.mouse.y - 0.72 * cursor_size);
+    context.stroke();
+    context.closePath();
+}
+
+Game.prototype.draw_player_action = function(context) {
+    const _this = (this);
+
+    if (_this.key.mouse_r) {
+        // 画出玩家和光标的连线, 虚线
+        context.beginPath();
+        context.strokeStyle = "white";
+        context.lineWidth = 4;
+        // 表示玩家和光标的canvas坐标
+        let p_X = _this.player.loc.x + _this.tile_size / 2 - _this.camera.x;
+        let p_Y = _this.player.loc.y + _this.tile_size / 2 - _this.camera.y;
+        let c_X = _this.mouse.x;
+        let c_Y = _this.mouse.y;
+        let len = Math.sqrt(
+            Math.pow(p_X - c_X, 2) +
+            Math.pow(p_Y - c_Y, 2)
+        );
+        let sliceNum = 4;
+        let interval = 180;
+        let offset = -(new Date().getTime() / interval) % (32) * (len / 32);
+        context.lineDashOffset = offset;
+        context.setLineDash([len / sliceNum * 2 / 3, len / sliceNum / 3]);
+        context.moveTo(p_X, p_Y);
+        context.lineTo(c_X, c_Y);
+        context.stroke();
+
+        context.setLineDash([]);
+        context.closePath();
+
+    }
+}
+
+Game.prototype.draw = function(context, map_id, players, camera) {
     // 如果地图改变, 重新加载
     if (!this.current_map || map_id != this.current_map.mapId) this.load_map(map_id);
 
@@ -538,21 +637,32 @@ Clarity.prototype.draw = function(context, map_id, players, camera) {
     // 画出所有玩家
     this.draw_all_players(context, players);
 
-    // 调整相机位置
-    this.update_camera(camera.x, camera.y, false);
+    // 画出光标
+    this.draw_cursor(context);
 
-    // 画出相机
+    // 画出玩家的行动
+    this.draw_player_action(context);
+
     // context.fillStyle = '#f00';
     // context.fillRect(
     //     // Math.round(camera.x - this.viewport.x / 2 + this.tile_size) / zoomIndex,
     //     // Math.round(camera.y - this.viewport.y / 2 + this.tile_size) / zoomIndex,
-    //     (this.viewport.x / 2),
-    //     (this.viewport.y / 2),
-    //     16,
-    //     16
+    //     this.player.loc.x + this.tile_size / 2 - this.camera.x,
+    //     this.player.loc.y + this.tile_size / 2 - this.camera.y,
+    //     // this.viewport.x / 2,
+    //     // this.viewport.y / 2,
+    //     // this.mouse.x,
+    //     // this.mouse.y,
+    //     1,
+    //     1
     // );
     // console.log(this.viewport);
+
+    // 调整相机位置
+    this.update_camera(camera.x, camera.y, false);
 };
+
+/* div: html前端杂货 */
 
 function setSkinColor(color) {
     playerColour = color;
@@ -565,11 +675,12 @@ function setPlayerName(name) {
     tellServer();
 }
 
+/* div: 定义和main函数 */
 
 const canvas = document.getElementById('canvas'),
     ctx = canvas.getContext('2d');
 
-const game = new Clarity();
+const game = new Game();
 
 // 获取窗口宽高, 并设置canvas的大小
 function setViewZoom(zoomIndex) {
