@@ -7,6 +7,7 @@ const nameMaxLength = 15;
 const HPBarColor = '#ff5555aa';
 const HPBarWidth = 30;
 const HPBarHeight = 4;
+let zoomIndex = 0.9;
 
 function setServer(serverAddress) {
     serverAddress = serverAddress || "ws://127.0.0.1:432";
@@ -26,9 +27,12 @@ function setServer(serverAddress) {
         let data = JSON.parse(e.data);
         // console.log(data);
         // 计算延迟
-        let latency = Date.now() - data.time;
+        let receiveTime = Date.now();
+        let latency = receiveTime - data.time;
         game.draw(ctx, data.map_id, data.players, data.players[0].loc);
+        let renderLatency = Date.now() - receiveTime;
         document.querySelector("#serverDelay").innerText = latency;
+        document.querySelector("#renderDelay").innerText = renderLatency;
     };
     socket.onclose = function() {
         console.log("连接关闭");
@@ -312,12 +316,22 @@ Clarity.prototype.draw_tile = function(x, y, tile, context) {
     );
 };
 
-Clarity.prototype.draw_map = function(context, fore) {
-    // 如果fore为true表示画前景, 否则画底层, 输入false两层都会画
+Clarity.prototype.draw_map = function(context) {
+
+    // 在最底层画出地图名称
+    context.fillStyle = "white";
+    context.font = canvas.width / 10 + "px Segoe Script";
+    context.strokeStyle = "#ffffff66";
+    // 白色描边
+    context.lineWidth = 6;
+    context.strokeText(this.current_map.mapName, canvas.width / 2 - context.measureText(this.current_map.mapName).width / 2, canvas.height * (.5 - 1 / 8));
+
+
     for (var y = 0; y < this.current_map.data.length; y++) {
         for (var x = 0; x < this.current_map.data[y].length; x++) {
-
-            if ((!fore && !this.current_map.data[y][x].fore) || (fore && this.current_map.data[y][x].fore)) {
+            // 暂时无序画前景和底层的区分
+            // if ((!fore && !this.current_map.data[y][x].fore) || (fore && this.current_map.data[y][x].fore))
+            {
                 var t_x = (x * this.tile_size) - this.camera.x;
                 var t_y = (y * this.tile_size) - this.camera.y;
 
@@ -337,7 +351,6 @@ Clarity.prototype.draw_map = function(context, fore) {
         }
     }
 
-    if (!fore) this.draw_map(context, true);
 };
 
 Clarity.prototype.move_player = function() {
@@ -741,7 +754,7 @@ Clarity.prototype.draw = function(context, map_id, players, camera) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // 画出地图
-    this.draw_map(context, false);
+    this.draw_map(context);
 
     // 画出所有玩家
     this.draw_all_players(context, players);
@@ -762,30 +775,36 @@ function setPlayerName(name) {
 }
 
 
-var canvas = document.getElementById('canvas'),
+const canvas = document.getElementById('canvas'),
     ctx = canvas.getContext('2d');
 
-canvas.width = 1800;
-canvas.height = 1600;
+// 获取窗口宽高, 并设置canvas的大小
+function setViewZoom(zoomIndex) {
+    const w = window.innerWidth,
+        h = window.innerHeight;
+    canvas.width = w / zoomIndex;
+    canvas.height = h / zoomIndex;
+}
+setViewZoom(zoomIndex);
 
-var game = new Clarity();
+const game = new Clarity();
 game.set_viewport(canvas.width, canvas.height);
 
-var tipBoard = document.getElementById("tipBoard");
-var playerColour = '#FF9900';
-var playerName = "player_A";
+const tipBoard = document.getElementById("tipBoard");
+const playerColour = '#FF9900';
+const playerName = "player_A";
 game.load_map(0);
 let trapClock = 0;
 
 game.pauseFlag = false;
-var anim;
+let anim;
 
 /* 将viewport限制在地图的范围内*/
 game.limit_viewport = false;
 /* camera开始移动的距离差 */
 game.camera.movement_limit = { x: 48, y: 8 };
 
-var Loop = function() {
+const Loop = function() {
 
     ctx.fillStyle = game.current_map.background;
     ctx.fillRect(0, 0, canvas.width, canvas.height);

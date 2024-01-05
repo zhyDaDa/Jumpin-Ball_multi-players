@@ -160,6 +160,8 @@ const deepCopy = function(source, kaiguan) {
     return result;
 }
 
+
+
 class GAME {
     constructor() {
         this.alert_errors = false;
@@ -224,6 +226,16 @@ class GAME {
         return true;
     }
 
+    map_script = function(player, argumentList) {
+        switch (argumentList[0]) {
+            case "teleport_map":
+                // teleport_map(mapId);
+                let mapId = parseInt(argumentList[1]);
+                this.teleport_player(player, this.maps[mapId].player.x, this.maps[mapId].player.y, mapId);
+                break;
+        }
+    }
+
     get_tile_from_id = function(mapId) {
         let _this = (this)
         return function(x, y) {
@@ -232,8 +244,12 @@ class GAME {
         };
     }
 
-    teleport_player = function(player, x, y) {
+    teleport_player = function(player, x, y, mapId) {
         // 单纯意义上的传送只会改变位置
+        if (typeof mapId !== "undefined") {
+            // 如果传入了mapId, 则切换地图
+            player.chara.current_mapId = mapId;
+        }
         player.chara.loc.x = x;
         player.chara.loc.y = y;
         // player.chara.vel.x = 0;
@@ -435,8 +451,7 @@ class GAME {
 
         if (player.last_tile != tile.id && tile.script) {
             // 如果当前的tile与上一个不同, 则执行这个tile的脚本
-            // todo: 暂未实现
-            eval(current_map.scripts[tile.script]);
+            this.map_script(player, tile.script);
         }
 
         player.last_tile = tile.id;
