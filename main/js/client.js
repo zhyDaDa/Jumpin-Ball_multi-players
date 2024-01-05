@@ -17,6 +17,8 @@ function setServer(serverAddress) {
     document.querySelector("#currentServerIP").innerText = serverAddress;
     document.querySelector("#h6_3").innerHTML = `<font color="blue"> 尝试连接服务器中... </font>`
     window.socket = new WebSocket(serverAddress);
+    window.socket_file = new WebSocket(serverAddress + "0");
+
     socket.onopen = function() {
         console.log("成功连接到服务器");
         // alert("成功连接到服务器");
@@ -38,6 +40,9 @@ function setServer(serverAddress) {
         console.log("连接关闭");
         document.querySelector("#h6_3").innerHTML = `<font color="red"> 服务器连接已断开 </font>`
     };
+    socket_file.onmessage = function(e) {
+        game.set_map(JSON.parse(e.data));
+    }
 }
 
 function tellServer() {
@@ -222,13 +227,12 @@ Clarity.prototype.keyup = function(e) {
 };
 
 Clarity.prototype.load_map = function(map_id) {
-    fetch("json/map.json").then(res => res.json()).then(data => {
-        game._load_map(data[map_id]);
-    });
+    // 从服务器加载地图
+    socket_file.send(JSON.stringify({ map_id: map_id }));
 }
 
 
-Clarity.prototype._load_map = function(map) {
+Clarity.prototype.set_map = function(map) {
 
 
     if (typeof map === 'undefined' ||
@@ -240,7 +244,7 @@ Clarity.prototype._load_map = function(map) {
         return false;
     }
 
-    this.current_map = deepCopy(map);
+    this.current_map = (map);
 
     if (typeof this.current_map.onLoad === "function") this.current_map.onLoad();
     this.player.can_float = true;
@@ -522,7 +526,6 @@ setViewZoom(zoomIndex);
 const tipBoard = document.getElementById("tipBoard");
 const playerColour = '#FF9900';
 const playerName = "player_A";
-game.load_map(0);
 let trapClock = 0;
 
 game.pauseFlag = false;

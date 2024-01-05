@@ -2,6 +2,7 @@ console.log('Server.js 开始运行');
 
 const fs = require('fs');
 const WebSocketServer = require('ws').Server;
+// const tween = require('tween.js');
 
 //初始化websocket
 // 以wifi的ip地址作为服务器的ip地址, port: 432 作为端口号
@@ -552,17 +553,19 @@ setInterval(() => {
     game.broadcast();
 }, 1000 / 70);
 
-// const wss_file = new WebSocketServer({
-//     host: '0.0.0.0',
-//     port: 4320
-// });
+const wss_file = new WebSocketServer({
+    host: '0.0.0.0',
+    port: 4320
+});
 
-// wss_file.on('connection', function(ws) {
-//     console.log(`file client ${ws._socket.remoteAddress} connected`);
-//     ws.on('message', function(message) {
-//         console.log(`file client ${ws._socket.remoteAddress} send ${message}`);
-//     })
-//     ws.on('close', function() {
-//         console.log(`file client ${ws._socket.remoteAddress} disconnected`);
-//     })
-// })
+wss_file.on('connection', function(ws) {
+    console.log(`file client ${ws._socket.remoteAddress} connected`);
+    ws.on('message', function(message) {
+        let mapId = JSON.parse(message).map_id;
+        let map = game.maps[mapId];
+        ws.send(JSON.stringify(map));
+    })
+    ws.on('close', function() {
+        console.log(`file client ${ws._socket.remoteAddress} disconnected`);
+    })
+})

@@ -2,6 +2,7 @@
     "dependencies": {
         "fs": "^0.0.1-security",
         "node-fetch": "^2.6.2",
+        "tween": "^0.9.0",
         "ws": "^8.15.1"
     },
     "scripts": {
