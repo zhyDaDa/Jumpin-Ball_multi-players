@@ -54,9 +54,9 @@ wss.on('connection', function(ws) {
             doublejumpFlag: false,
             can_doublejump: true,
 
-
             can_dash: true,
 
+            gliding: false,
 
             doublejump_ability: true,
             glide_ability: true,
@@ -77,9 +77,10 @@ wss.on('connection', function(ws) {
                 hp_max: 30,
                 mp_max: 10,
                 money: 0,
+                condtion: "normal",
+                timer: 0,
             },
             ip: ip,
-
         },
         ws: ws
     }
@@ -280,6 +281,21 @@ class GAME {
 
     move_player = function(player) {
 
+        if (player.chara.state.condtion != "normal") {
+            switch (player.chara.state.condtion) {
+                case "fallen":
+                    if (player.chara.state.timer < new Date().getTime()) {
+                        player.chara.state.condtion = "normal";
+                        this.teleport_player_to_savePoint(player);
+                    }
+                    break;
+                default:
+                    break;
+            }
+            return;
+        }
+
+
         let _this = (this);
 
         let tX = player.chara.loc.x + player.chara.vel.x;
@@ -381,8 +397,9 @@ class GAME {
         if (player.chara.loc.y > current_map.height_p + 100) {
             // player坠落死亡
             player.chara.state.hp -= 2;
-            // player回到重生点
-            this.teleport_player_to_savePoint(player);
+            player.chara.state.condtion = "fallen";
+            player.chara.state.timer = 3000 + new Date().getTime();
+            return;
         }
 
         player.chara.loc.x += player.chara.vel.x;
@@ -500,6 +517,9 @@ class GAME {
         if (player.key.down && player.chara.glide_ability) {
 
             player.chara.vel.y *= 0.8;
+            player.chara.gliding = true;
+        } else {
+            player.chara.gliding = false;
         }
         if (player.key.key_j && player.chara.dash_ability && player.chara.can_dash) {
             player.chara.can_dash = false;

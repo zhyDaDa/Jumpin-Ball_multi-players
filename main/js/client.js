@@ -352,10 +352,10 @@ Clarity.prototype.draw_all_players = function(context, players) {
 }
 
 Clarity.prototype.draw_player = function(context, player) {
+
+    // 绘制圆球本体
     context.fillStyle = player.colour || "oranges";
-
     context.beginPath();
-
     context.arc(
         player.loc.x + this.tile_size / 2 - this.camera.x,
         player.loc.y + this.tile_size / 2 - this.camera.y,
@@ -363,12 +363,56 @@ Clarity.prototype.draw_player = function(context, player) {
         0,
         Math.PI * 2
     );
-
     context.fill();
     context.closePath();
 
 
-    // 计算文字宽度
+    // 绘制特效
+    // 静态特效_特殊状态
+    if (player.state.condtion == "fallen") {
+        // 在其周围绘制虚线圆
+        context.beginPath();
+        context.strokeStyle = "white";
+        context.lineWidth = 3;
+        let radius = this.tile_size * .5 + 3;
+        let c = 2 * Math.PI * radius;
+        let sliceNum = 8;
+        let interval = 480;
+        context.setLineDash([c / sliceNum * 2 / 3, c / sliceNum / 3]);
+        context.arc(
+            player.loc.x + this.tile_size / 2 - this.camera.x,
+            player.loc.y + this.tile_size / 2 - this.camera.y,
+            radius,
+            0 + new Date().getTime() / interval % (16) * (2 * Math.PI / 16),
+            (2 * Math.PI) + new Date().getTime() / interval % (16) * (2 * Math.PI / 16)
+        );
+        context.stroke();
+        context.setLineDash([]);
+        context.closePath();
+    }
+
+    // 动态特效_悬浮
+    if (player.gliding) {
+        // 在其上方绘制半圆弧
+        context.beginPath();
+        context.strokeStyle = "white";
+        context.lineWidth = 2;
+        let radius = this.tile_size * .5 + 3;
+        let c = 2 * Math.PI * radius;
+        context.arc(
+            player.loc.x + this.tile_size / 2 - this.camera.x,
+            player.loc.y + this.tile_size / 2 - this.camera.y,
+            radius,
+            0, Math.PI,
+            true
+        );
+        context.stroke();
+        context.closePath();
+    }
+
+
+
+    // 绘制玩家的名字
     let fontSize = 12;
     let span = fontSize * nameMaxLength / 2;
     context.lineWidth = 1;
@@ -386,6 +430,7 @@ Clarity.prototype.draw_player = function(context, player) {
     // 向左挪半个文字宽度, 向上挪一个格子
     context.fillText(player.name, player.loc.x - this.camera.x + this.tile_size / 2 - textWidth / 2, player.loc.y - this.camera.y - this.tile_size / 2);
     context.closePath();
+
 
     // 在最上面绘制血条
     context.beginPath();
@@ -521,8 +566,8 @@ function setViewZoom(zoomIndex) {
 setViewZoom(zoomIndex);
 
 const tipBoard = document.getElementById("tipBoard");
-const playerColour = '#FF9900';
-const playerName = "player_A";
+let playerColour = '#FF9900';
+let playerName = "player_A";
 let trapClock = 0;
 
 game.pauseFlag = false;
