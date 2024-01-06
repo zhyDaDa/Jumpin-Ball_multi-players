@@ -3,6 +3,35 @@ console.log('Server.js 开始运行');
 
 const FALLEN_DAMAGE = 10; // 坠落伤害
 const VEL_STILL = 0.05; // 停止速度
+/**
+ * 地图边界的检测范围, 注意要乘上当前地图的tile_size
+ * @property {number} x
+ * @property {number} y
+ */
+const MAP_BOUNDARY_UNIT = { x: 30, y: 20 };
+
+/**
+ * 常量ENUM生成器
+ */
+const createConstants = (function() {
+    let privateConstants = {};
+
+    return function() {
+        for (let i = 0; i < arguments.length; i++) {
+            privateConstants[arguments[i]] = i;
+        }
+        return privateConstants;
+    };
+})();
+const _enumConstants = [
+    "BULLET_TYPE_NORMAL",
+    "BULLET_TYPE_EXPLOSIVE",
+    "BULLET_TYPE_LASER",
+    "SHAPE_CIRCLE",
+    "SHAPE_RECT",
+    "SHAPE_TRIANGLE",
+];
+const enums = createConstants(..._enumConstants);
 
 
 const fs = require('fs');
@@ -41,29 +70,68 @@ class Bullet {
      */
     constructor(player) {
         this.current_mapId = player.chara.current_mapId;
-        this.loc = player.chara.loc;
-        this.vel = player.chara.vel;
+        this.loc = deepCopy(player.chara.loc);
+        this.vel = deepCopy(player.chara.vel);
+        this.speed = 10;
         // this.acc = { x: 0, y: 0 };
         this.owner_ip = player.chara.ip;
 
         this.begin_point = deepCopy(this.loc);
-        this.end_point = deepCopy(this.loc);
+        this.end_point = deepCopy(player.chara.aimer);
 
         this.damage_direct = 0;
         this.damage_slice = 0;
         this.damage_continuous = 0;
         this.damage_explosion = 0;
 
-        this.type = 0; // BULLET_TYPE_NORMAL, BULLET_TYPE_EXPLOSIVE, BULLET_TYPE_LASER
+        this.type = enums.BULLET_TYPE_NORMAL; // BULLET_TYPE_NORMAL, BULLET_TYPE_EXPLOSIVE, BULLET_TYPE_LASER
         this.class = 0; // BULLET_CLASS_WHITE, BULLET_CLASS_BLACK
 
         // 特殊效果
         this.timer = 0;
         this.effect = 0; // BULLET_EFFECT_NONE, BULLET_EFFECT_FREEZE, BULLET_EFFECT_BURN
 
-        this.colour = "#000";
-        this.size = 0;
+        this.colour = "#f00";
+        this.size = 50;
         this.shape = 0; // BULLET_SHAPE_CIRCLE, BULLET_SHAPE_RECT
+
+        this.init(); // 根据type初始化
+    }
+
+    // todo: 展望: 考虑出一个子弹的json, 存储数值, 轨迹, 效果等, 发给客户端还能实现特效和音效
+
+    init() {
+        switch (this.type) {
+            case enums.BULLET_TYPE_NORMAL:
+            default:
+                this.size = 50;
+                this.shape = enums.SHAPE_CIRCLE;
+                this.colour = "#f00";
+                this.acc = { x: 0, y: 0 };
+                // 由begin_point和end_point确定方向, 向量的模为speed
+                let dx = this.end_point.x - this.begin_point.x;
+                let dy = this.end_point.y - this.begin_point.y;
+                let d = Math.sqrt(dx * dx + dy * dy);
+                this.vel.x = this.speed * dx / d;
+                this.vel.y = this.speed * dy / d;
+                break;
+        }
+    }
+
+
+    /**
+     * 计算子弹的下一个位置
+     * @param {{x: Number, y: Number}} current_gravity 当前地图的重力
+     */
+    update(current_gravity) {
+        switch (this.type) {
+            default: this.vel.x += this.acc.x;
+            this.vel.y += this.acc.y;
+            case enums.BULLET_TYPE_NORMAL:
+                    this.loc.x += this.vel.x;
+                this.loc.y += this.vel.y;
+                break;
+        }
     }
 }
 
@@ -187,6 +255,8 @@ class Player {
             mouse_l: false,
             mouse_m: false,
             mouse_r: false,
+            mouseX: 0,
+            mouseY: 0,
         };
         this.chara = new Chara();
         this.ws = undefined;
@@ -424,6 +494,60 @@ class GAME {
     }
 
     /**
+     * 检查obj是否碰到了地图实体
+     * @param {{current_mapId: Number, size: Number, loc: {x: Number, y: Number}}} obj
+     * @return {Boolean}
+     */
+    collisionCheck = function(obj) {
+        let _this = (this);
+        let current_map = _this.maps[obj.current_mapId];
+        let tile_size = current_map.tile_size;
+        let offset = obj.size / 2;
+
+        let get_tile = this.get_tile_from_mapId(obj.current_mapId);
+
+        let t_y_up = Math.floor(obj.loc.y / tile_size);
+        let t_y_down = Math.ceil(obj.loc.y / tile_size);
+        let y_near1 = Math.round((obj.loc.y - offset) / tile_size);
+        let y_near2 = Math.round((obj.loc.y + offset) / tile_size);
+
+        let t_x_left = Math.floor(obj.loc.x / tile_size);
+        let t_x_right = Math.ceil(obj.loc.x / tile_size);
+        let x_near1 = Math.round((obj.loc.x - offset) / tile_size);
+        let x_near2 = Math.round((obj.loc.x + offset) / tile_size);
+
+        let top1 = get_tile(x_near1, t_y_up);
+        let top2 = get_tile(x_near2, t_y_up);
+        let bottom1 = get_tile(x_near1, t_y_down);
+        let bottom2 = get_tile(x_near2, t_y_down);
+        let left1 = get_tile(t_x_left, y_near1);
+        let left2 = get_tile(t_x_left, y_near2);
+        let right1 = get_tile(t_x_right, y_near1);
+        let right2 = get_tile(t_x_right, y_near2);
+
+        return ((left1.solid && left2.solid) ||
+            (right1.solid && right2.solid) ||
+            (top1.solid && top2.solid) ||
+            (bottom1.solid && bottom2.solid));
+    }
+
+    /**
+     * 检查obj是否出了地图边界
+     * @param {{current_mapId: Number, loc: {x: Number, y: Number}}} obj
+     * @return {Boolean}
+     */
+    fallenCheck = function(obj) {
+        let _this = (this);
+        let current_map = _this.maps[obj.current_mapId];
+        let tile_size = current_map.tile_size;
+        return (obj.loc.y > current_map.height_p + MAP_BOUNDARY_UNIT.y * tile_size ||
+            obj.loc.y < -MAP_BOUNDARY_UNIT.y * tile_size ||
+            obj.loc.x < -MAP_BOUNDARY_UNIT.x * tile_size ||
+            obj.loc.x > current_map.width_p + MAP_BOUNDARY_UNIT.x * tile_size);
+    }
+
+
+    /**
      * 负责处理玩家的移动, 确定最终位置
      * @param {Player} player 玩家
      */
@@ -452,14 +576,14 @@ class GAME {
         let tX = player.chara.loc.x + player.chara.vel.x;
         let tY = player.chara.loc.y + player.chara.vel.y;
 
-        let offset = Math.round((this.tile_size / 2) - 1);
-
         let get_tile = this.get_tile_from_mapId(player.chara.current_mapId);
         let current_map = _this.maps[player.chara.current_mapId];
+        let tile_size = current_map.tile_size;
+        let offset = Math.round((tile_size / 2) - 1);
 
         let tile = get_tile(
-            Math.round(player.chara.loc.x / this.tile_size),
-            Math.round(player.chara.loc.y / this.tile_size)
+            Math.round(player.chara.loc.x / tile_size),
+            Math.round(player.chara.loc.y / tile_size)
         );
 
         player.chara.acc.x += tile.gravity ? tile.gravity.x : current_map.gravity.x;
@@ -470,15 +594,15 @@ class GAME {
         //     player.chara.vel.y *= tile.acceleration.y;
         // }
 
-        let t_y_up = Math.floor(tY / this.tile_size);
-        let t_y_down = Math.ceil(tY / this.tile_size);
-        let y_near1 = Math.round((player.chara.loc.y - offset) / this.tile_size);
-        let y_near2 = Math.round((player.chara.loc.y + offset) / this.tile_size);
+        let t_y_up = Math.floor(tY / tile_size);
+        let t_y_down = Math.ceil(tY / tile_size);
+        let y_near1 = Math.round((player.chara.loc.y - offset) / tile_size);
+        let y_near2 = Math.round((player.chara.loc.y + offset) / tile_size);
 
-        let t_x_left = Math.floor(tX / this.tile_size);
-        let t_x_right = Math.ceil(tX / this.tile_size);
-        let x_near1 = Math.round((player.chara.loc.x - offset) / this.tile_size);
-        let x_near2 = Math.round((player.chara.loc.x + offset) / this.tile_size);
+        let t_x_left = Math.floor(tX / tile_size);
+        let t_x_right = Math.ceil(tX / tile_size);
+        let x_near1 = Math.round((player.chara.loc.x - offset) / tile_size);
+        let x_near2 = Math.round((player.chara.loc.x + offset) / tile_size);
 
         let top1 = get_tile(x_near1, t_y_up);
         let top2 = get_tile(x_near2, t_y_up);
@@ -597,12 +721,13 @@ class GAME {
 
             player.chara.vel.y *= -bounceY || 0;
         }
-        /* 速度结算 */
+        /* 速度结算, 得到下一个理想位置 */
         player.chara.loc.x += player.chara.vel.x;
         player.chara.loc.y += player.chara.vel.y;
 
-        /* 坠落判断 */
-        if (player.chara.loc.y > current_map.height_p + 100) {
+        /* 出图判断 */
+        if (this.fallenCheck(player.chara)) {
+
             // player坠落死亡
             player.chara.state.hp -= FALLEN_DAMAGE;
             player.chara.state.condtion = "fallen";
@@ -616,12 +741,12 @@ class GAME {
 
             /* 解决重叠 */
 
-            while (get_tile(Math.floor(player.chara.loc.x / this.tile_size), y_near1).solid ||
-                get_tile(Math.floor(player.chara.loc.x / this.tile_size), y_near2).solid)
+            while (get_tile(Math.floor(player.chara.loc.x / tile_size), y_near1).solid ||
+                get_tile(Math.floor(player.chara.loc.x / tile_size), y_near2).solid)
                 player.chara.loc.x += 0.1;
 
-            while (get_tile(Math.ceil(player.chara.loc.x / this.tile_size), y_near1).solid ||
-                get_tile(Math.ceil(player.chara.loc.x / this.tile_size), y_near2).solid)
+            while (get_tile(Math.ceil(player.chara.loc.x / tile_size), y_near1).solid ||
+                get_tile(Math.ceil(player.chara.loc.x / tile_size), y_near2).solid)
                 player.chara.loc.x -= 0.1;
 
         }
@@ -630,12 +755,12 @@ class GAME {
 
             /* 解决重叠 */
 
-            while (get_tile(x_near1, Math.floor(player.chara.loc.y / this.tile_size)).solid ||
-                get_tile(x_near2, Math.floor(player.chara.loc.y / this.tile_size)).solid)
+            while (get_tile(x_near1, Math.floor(player.chara.loc.y / tile_size)).solid ||
+                get_tile(x_near2, Math.floor(player.chara.loc.y / tile_size)).solid)
                 player.chara.loc.y += 0.1;
 
-            while (get_tile(x_near1, Math.ceil(player.chara.loc.y / this.tile_size)).solid ||
-                get_tile(x_near2, Math.ceil(player.chara.loc.y / this.tile_size)).solid)
+            while (get_tile(x_near1, Math.ceil(player.chara.loc.y / tile_size)).solid ||
+                get_tile(x_near2, Math.ceil(player.chara.loc.y / tile_size)).solid)
                 player.chara.loc.y -= 0.1;
 
             /* 着地判断 */
@@ -672,6 +797,7 @@ class GAME {
         let _this = (this);
         let current_map = _this.maps[player.chara.current_mapId];
         player.chara.acc = { x: 0, y: 0 };
+        player.chara.aimer = { x: player.key.mouseX, y: player.key.mouseY };
 
         // console.log(`player update\nposition: (${player.chara.loc.x},${player.chara.loc.y}); velocity: (${player.chara.vel.x},${player.chara.vel.y})`);
 
@@ -722,39 +848,46 @@ class GAME {
         // 行动相关
         if (player.key.mouse_l) {
             // 射击
-            // TODO: 能否攻击的判断
-            if (player.chara.state.mp > 0) {
+            // TODO: 能否攻击的判断(涉及到reload)
+            if (true) {
                 // 生成一颗子弹
                 let bullet = new Bullet(player);
-                bulletDic[player.chara.current_mapId].push(bullet);
+                if (bulletDic[player.chara.current_mapId]) {
+                    bulletDic[player.chara.current_mapId].push(bullet);
+                } else {
+                    bulletDic[player.chara.current_mapId] = [bullet];
+                }
             }
         }
 
         this.move_player(player);
     }
 
+    /**
+     * 处理子弹的移动
+     * @param {Bullet} bullet 子弹
+     */
     move_bullet = function(bullet) {
         let _this = (this);
         let current_map = _this.maps[bullet.current_mapId];
-        bullet.loc.x += bullet.vel.x;
-        bullet.loc.y += bullet.vel.y;
-        bullet.vel.x += bullet.acc.x;
-        bullet.vel.y += bullet.acc.y;
-        bullet.acc.x += bullet.acc.x;
-        bullet.acc.y += bullet.acc.y;
-        if (bullet.loc.x < 0 || bullet.loc.x > current_map.width_p) {
-            // 超出地图范围, 删除子弹
+        bullet.update(current_map.gravity);
+        if (this.collisionCheck(bullet) || this.fallenCheck(bullet)) {
+            // 删除子弹, 释放内存
             bulletDic[bullet.current_mapId].splice(bulletDic[bullet.current_mapId].indexOf(bullet), 1);
+            bullet = null;
         }
+        // todo: 展望: 对于特殊子弹, 需要判断撞墙是否弹跳等...
     }
 
     update = function() {
         for (let player in playerDic) {
             game.update_player(playerDic[player]);
         }
+        let count = 0;
         bulletDic.forEach((bulletListInMap, mapId) => {
             bulletListInMap.forEach(bullet => {
                 this.move_bullet(bullet);
+                count++;
             });
         });
     }

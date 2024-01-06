@@ -35,8 +35,18 @@ function setServer(serverAddress) {
         // 计算延迟
         let receiveTime = Date.now();
         let latency = receiveTime - data.time;
+        /*  let data = {
+                map_id: 0,
+                players: [],
+                items: [],
+                bullets: [],
+                time: new Date().getTime()
+            } 
+        */
         game.player = deepCopy(data.players[0]);
-        game.draw(ctx, data.map_id, data.players, data.players[0].loc);
+        game.draw(ctx, data.map_id, data.players, data.items, data.bullets);
+
+        // 更新延迟显示
         let renderLatency = Date.now() - receiveTime;
         document.querySelector("#serverDelay").innerText = latency;
         document.querySelector("#renderDelay").innerText = renderLatency;
@@ -51,6 +61,9 @@ function setServer(serverAddress) {
 }
 
 function tellServer() {
+    // 将canvas坐标转换为数据坐标
+    game.key.mouseX = game.mouse.x + game.camera.x;
+    game.key.mouseY = game.mouse.y + game.camera.y;
     let message = JSON.stringify({
         key: game.key,
         color: playerColour || '#FF9900',
@@ -94,6 +107,8 @@ var Game = function() {
         mouse_l: false,
         mouse_m: false,
         mouse_r: false,
+        mouseX: 0,
+        mouseY: 0,
     };
 
     this.mouse = { x: 0, y: 0 };
@@ -246,6 +261,7 @@ Game.prototype.mouseMove = function(e) {
         x: e.clientX / zoomIndex,
         y: e.clientY / zoomIndex
     };
+    tellServer();
 }
 
 Game.prototype.mouseDown = function(e) {
@@ -261,6 +277,7 @@ Game.prototype.mouseDown = function(e) {
             _this.key.mouse_r = true;
             break;
     }
+    tellServer();
 }
 
 Game.prototype.mouseUp = function(e) {
@@ -276,6 +293,7 @@ Game.prototype.mouseUp = function(e) {
             _this.key.mouse_r = false;
             break;
     }
+    tellServer();
 }
 
 Game.prototype.load_map = function(map_id) {
@@ -623,7 +641,37 @@ Game.prototype.draw_player_action = function(context) {
     }
 }
 
-Game.prototype.draw = function(context, map_id, players, camera) {
+Game.prototype.draw_bullets = function(context, bullets) {
+    console.log(`画出${bullets.length}颗子弹`);
+    for (let bullet of bullets) {
+        this.draw_bullet(context, bullet);
+    }
+}
+
+Game.prototype.draw_bullet = function(context, bullet) {
+    /* 
+        bullet.loc = { x: 0, y: 0 };
+        bullet.colour = "#000";
+        bullet.size = 0;
+        bullet.shape = 0; // BULLET_SHAPE_CIRCLE, BULLET_SHAPE_RECT
+     */
+    context.beginPath();
+    context.fillStyle = bullet.colour;
+    // todo: 展望: 根据不同形状绘制不同形状的子弹, 绘制方法通过json文件配置
+    // TODO: 所有的实体应当以其中心点来表示位置, canvas坐标系要统一改
+    // 这里的this.tile_size应该去掉, 所有的tilesize/2都应该去掉
+    context.arc(
+        bullet.loc.x - this.camera.x,
+        bullet.loc.y - this.camera.y,
+        bullet.size / 2,
+        0,
+        Math.PI * 2
+    );
+    context.fill();
+    context.closePath();
+}
+
+Game.prototype.draw = function(context, map_id, players, items, bullets) {
     // 如果地图改变, 重新加载
     if (!this.current_map || map_id != this.current_map.mapId) this.load_map(map_id);
 
@@ -640,8 +688,11 @@ Game.prototype.draw = function(context, map_id, players, camera) {
     // 画出光标
     this.draw_cursor(context);
 
-    // 画出玩家的行动
+    // 画出本玩家的行动提示
     this.draw_player_action(context);
+
+    // 画出子弹
+    this.draw_bullets(context, bullets);
 
     // context.fillStyle = '#f00';
     // context.fillRect(
@@ -659,7 +710,7 @@ Game.prototype.draw = function(context, map_id, players, camera) {
     // console.log(this.viewport);
 
     // 调整相机位置
-    this.update_camera(camera.x, camera.y, false);
+    this.update_camera(this.player.loc.x, this.player.loc.y, false);
 };
 
 /* div: html前端杂货 */
