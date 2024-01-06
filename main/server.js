@@ -71,6 +71,8 @@ class Bullet {
  * with movement
  * @property {{x: Number, y: Number}} loc
  * @property {{x: Number, y: Number}} vel
+ * @property {{x: Number, y: Number}} acc
+ * @property {{jump: Number, left: Number, right: Number}} speed
  * @property {{x: Number, y: Number}} aimer
  * with info
  * @property {String} ip
@@ -101,6 +103,22 @@ class Chara {
         this.vel = {
             x: 0,
             y: 0
+        };
+
+        this.vel_limit = {
+            x: 4,
+            y: 10
+        };
+
+        this.acc = {
+            x: 0,
+            y: 0
+        };
+
+        this.speed = {
+            jump: 6,
+            left: 0.5,
+            right: 0.5,
         };
 
         this.aimer = {
@@ -404,6 +422,10 @@ class GAME {
         player.chara.dash_ability = true;
     }
 
+    /**
+     * 负责处理玩家的移动, 确定最终位置
+     * @param {Player} player 玩家
+     */
     move_player = function(player) {
 
         if (player.chara.state.condtion != "normal") {
@@ -425,6 +447,7 @@ class GAME {
 
         let _this = (this);
 
+        // TODO: 是否需要提前将移动产生的加速度加到速度上
         let tX = player.chara.loc.x + player.chara.vel.x;
         let tY = player.chara.loc.y + player.chara.vel.y;
 
@@ -438,22 +461,13 @@ class GAME {
             Math.round(player.chara.loc.y / this.tile_size)
         );
 
-        if (tile.gravity) {
+        player.chara.acc.x += tile.gravity ? tile.gravity.x : current_map.gravity.x;
+        player.chara.acc.y += tile.gravity ? tile.gravity.y : current_map.gravity.y;
 
-            player.chara.vel.x += tile.gravity.x;
-            player.chara.vel.y += tile.gravity.y;
-
-        } else {
-
-            player.chara.vel.x += current_map.gravity.x;
-            player.chara.vel.y += current_map.gravity.y;
-        }
-
-        if (tile.friction) {
-
-            player.chara.vel.x *= tile.friction.x;
-            player.chara.vel.y *= tile.friction.y;
-        }
+        // if (tile.acceleration) {
+        //     player.chara.vel.x *= tile.acceleration.x;
+        //     player.chara.vel.y *= tile.acceleration.y;
+        // }
 
         let t_y_up = Math.floor(tY / this.tile_size);
         let t_y_down = Math.ceil(tY / this.tile_size);
@@ -478,6 +492,14 @@ class GAME {
         let right3 = get_tile(t_x_right + 1, y_near1);
         let right4 = get_tile(t_x_right + 1, y_near2);
 
+        // 摩擦系数导致的加速度 a = -μg
+        let friction1 = bottom1.friction ? bottom1.friction.x : 0;
+        let friction2 = bottom2.friction ? bottom2.friction.x : 0;
+        let friction = (friction1 + friction2) / 2;
+        // 判断符号, 摩擦力永远与速度方向相反
+        let a = friction * (tile.gravity || current_map.gravity).y;
+        if (Math.abs(player.chara.vel.x) > 0.05)
+            player.chara.acc.x -= a * Math.sign(player.chara.vel.x);
 
         if (tile.jump && player.jump_switch > 15) {
 
@@ -491,13 +513,16 @@ class GAME {
 
         } else player.jump_switch++;
 
+        // 普通方式的速度修改在这里结算
+        player.chara.vel.x += player.chara.acc.x;
+        player.chara.vel.y += player.chara.acc.y;
         player.chara.vel.x = Math.min(Math.max(player.chara.vel.x, -current_map.vel_limit.x), current_map.vel_limit.x);
         player.chara.vel.y = Math.min(Math.max(player.chara.vel.y, -current_map.vel_limit.y), current_map.vel_limit.y);
 
         /* dash技能处理 */
         if (left1.solid || left2.solid || right1.solid || right2.solid || left3.solid || left4.solid || right3.solid || right4.solid) { player.dash_switch = 0; }
         if (player.dash_switch > 0) {
-            player.chara.vel.x = player.key.left ? -10 : 10;
+            player.chara.vel.x = 2.5 * player.chara.vel_limit.x * Math.sign(player.chara.vel.x);
             player.dash_switch--;
         }
 
@@ -534,7 +559,7 @@ class GAME {
         player.chara.loc.x += player.chara.vel.x;
         player.chara.loc.y += player.chara.vel.y;
 
-        player.chara.vel.x *= .9;
+        // player.chara.vel.x *= .9;
 
         if (left1.solid || left2.solid || right1.solid || right2.solid) {
 
@@ -616,25 +641,26 @@ class GAME {
         // 负责通过玩家按键来确定当前的速度和技能使用
         let _this = (this);
         let current_map = _this.maps[player.chara.current_mapId];
+        player.chara.acc = { x: 0, y: 0 };
 
         // console.log(`player update\nposition: (${player.chara.loc.x},${player.chara.loc.y}); velocity: (${player.chara.vel.x},${player.chara.vel.y})`);
 
         // 移动相关
 
         if (player.key.left) {
-
-            if (player.chara.vel.x > -current_map.vel_limit.x)
-                player.chara.vel.x -= current_map.movement_speed.left;
+            // 玩家自身的速度限制优先于地图速度限制
+            if (player.chara.vel.x > -player.chara.vel_limit.x && player.chara.vel.x > -current_map.vel_limit.x)
+                player.chara.acc.x -= player.chara.speed.left;
         }
         if (player.key.up) {
-            if (player.chara.can_jump && !player.chara.doublejumpFlag && player.chara.can_doublejump && player.chara.vel.y > -current_map.vel_limit.y) {
+            if (player.chara.can_jump && !player.chara.doublejumpFlag && player.chara.can_doublejump && player.chara.vel.y > -player.chara.vel_limit.y && player.chara.vel.y > -current_map.vel_limit.y) {
 
-                player.chara.vel.y -= current_map.movement_speed.jump;
+                player.chara.vel.y -= player.chara.speed.jump;
                 player.chara.can_jump = false;
 
-                player.jump_switch = 0;
+                player.jump_switch = 0; // TODO: jump_switch 的作用分析和优化
             }
-            if (player.chara.doublejump_ability && !player.chara.can_jump && player.chara.doublejumpFlag && player.chara.can_doublejump && player.chara.vel.y > -current_map.vel_limit.y && player.jump_switch > 20) {
+            if (player.chara.doublejump_ability && !player.chara.can_jump && player.chara.doublejumpFlag && player.chara.can_doublejump && player.chara.vel.y > -player.chara.vel_limit.y && player.chara.vel.y > -current_map.vel_limit.y && player.jump_switch > 20) {
 
                 player.chara.vel.y *= 0.8;
                 player.chara.vel.y -= current_map.movement_speed.jump;
@@ -645,9 +671,8 @@ class GAME {
             player.jump_switch++;
         }
         if (player.key.right) {
-
-            if (player.chara.vel.x < current_map.vel_limit.x)
-                player.chara.vel.x += current_map.movement_speed.left;
+            if (player.chara.vel.x < player.chara.vel_limit.x && player.chara.vel.x < current_map.vel_limit.x)
+                player.chara.acc.x += player.chara.speed.right;
         }
         if (player.key.down && player.chara.glide_ability) {
 
