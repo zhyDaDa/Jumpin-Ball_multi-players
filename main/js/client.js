@@ -311,7 +311,7 @@ Game.prototype.set_map = function(map) {
     this.current_map.height = 0;
 
     // 把data地图中所有的数字转换为tile对象, 同时记录地图的宽度和高度
-    // todo: 有改动
+    // TODO: 有改动
     _this.current_map.height = map.data.length;
 
     map.data.forEach(function(row, y) {
@@ -574,7 +574,7 @@ Game.prototype.update_camera = function(target_x, target_y, direct) {
 
 Game.prototype.draw_cursor = function(context) {
     const _this = (this);
-
+    // TODO: 玩家按着左键时, 准星缩小
     // 画出准星, 由四个矩形组成
     context.beginPath();
     context.strokeStyle = "white";

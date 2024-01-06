@@ -138,6 +138,32 @@ item = {
 ```JavaScript
 ```
 
+## Bullet对象
+```JavaScript
+bullet = {
+  loc: {x: 0, y: 0},
+  vel: {x: 0, y: 0},
+  acc: {x: 0, y: 0},
+  owner: player,
+
+  damage_direct: 0,
+  damage_slice: 0,
+  damage_continuous: 0,
+  damage_explosion: 0,
+
+  type: ENUM, // BULLET_TYPE_NORMAL, BULLET_TYPE_EXPLOSIVE, BULLET_TYPE_LASER
+  class: ENUM, // BULLET_CLASS_WHITE, BULLET_CLASS_BLACK
+
+  // 特殊效果
+  timer: 0,
+  effect: ENUM, // BULLET_EFFECT_NONE, BULLET_EFFECT_FREEZE, BULLET_EFFECT_BURN
+
+  colour: "#000",
+  size: 0,
+  shape: ENUM, // BULLET_SHAPE_CIRCLE, BULLET_SHAPE_RECT
+}
+```
+
 ## 通信信息
 ### 客户端向服务器发送的信息
 ```JavaScript
@@ -158,6 +184,20 @@ item = {
   time: new Date().getTime()
 }
 ```
+
+## 简易物理引擎原理
+即`move_player`函数的实现原理
+ 1. 由速度`vel`和当前位置`loc`计算出下一时刻的位置`tX`和`tY`
+ 2. 确定一些变量: 
+    + `offset`: 其值略小于单位砖块大小的一半, 用于检查边界
+    + `tile`: 玩家当前所处砖块的信息
+  3. 通过当前砖块信息调整玩家的速度:
+    + `gravity`: 加速度, 会被加到`vel`上
+    + `friction`: 速度衰减, 会被乘到`vel`上
+  4. 检测碰撞:  
+    正常情况下, 玩家会和4个砖块发生碰撞  
+    分别检测`x`和`y`方向上的碰撞, 如果发生碰撞, 会根据碰撞的砖块信息调整玩家的位置  
+    再取四周砖块的`bounce`最大值作为`bounce`的值, 进行碰撞反弹, 最后更新玩家的位置
 
 # 开发中遇到的问题
 ## 地图对象

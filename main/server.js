@@ -8,7 +8,186 @@ const fs = require('fs');
 const WebSocketServer = require('ws').Server;
 // const tween = require('tween.js');
 
-//初始化websocket
+/* div: 对象设定 */
+/**
+ * @class Bullet
+ * with movement
+ * @property {number} current_mapId
+ * @property {number} owner_ip
+ * @property {{x: Number, y: Number}} loc   
+ * @property {{x: Number, y: Number}} vel
+ * @property {{x: Number, y: Number}} acc
+ * @property {{x: Number, y: Number}} begin_point
+ * @property {{x: Number, y: Number}} end_point 未必是终点, 对于激光类的子弹来说是射线的方向上的一点
+ * with damage
+ * @property {number} damage_direct
+ * @property {number} damage_slice
+ * @property {number} damage_continuous
+ * @property {number} damage_explosion
+ * @property {number} timer
+ * @property {number} effect
+ * with info
+ * @property {number} type
+ * @property {number} class
+ * @property {string} colour
+ * @property {number} size
+ * @property {number} shape
+ */
+class Bullet {
+    /**
+     * 生成一颗子弹对象, 预设基于玩家信息
+     * @param {Player} player 发出者的player对象
+     */
+    constructor(player) {
+        this.current_mapId = player.chara.current_mapId;
+        this.loc = player.chara.loc;
+        this.vel = player.chara.vel;
+        // this.acc = { x: 0, y: 0 };
+        this.owner_ip = player.chara.ip;
+
+        this.begin_point = deepCopy(this.loc);
+        this.end_point = deepCopy(this.loc);
+
+        this.damage_direct = 0;
+        this.damage_slice = 0;
+        this.damage_continuous = 0;
+        this.damage_explosion = 0;
+
+        this.type = 0; // BULLET_TYPE_NORMAL, BULLET_TYPE_EXPLOSIVE, BULLET_TYPE_LASER
+        this.class = 0; // BULLET_CLASS_WHITE, BULLET_CLASS_BLACK
+
+        // 特殊效果
+        this.timer = 0;
+        this.effect = 0; // BULLET_EFFECT_NONE, BULLET_EFFECT_FREEZE, BULLET_EFFECT_BURN
+
+        this.colour = "#000";
+        this.size = 0;
+        this.shape = 0; // BULLET_SHAPE_CIRCLE, BULLET_SHAPE_RECT
+    }
+}
+
+/**
+ * @class Chara
+ * with movement
+ * @property {{x: Number, y: Number}} loc
+ * @property {{x: Number, y: Number}} vel
+ * @property {{x: Number, y: Number}} aimer
+ * with info
+ * @property {String} ip
+ * @property {String} name
+ * @property {String} colour
+ * @property {Number} current_mapId
+ * with flags
+ * @property {Boolean} can_jump
+ * @property {Boolean} doublejumpFlag
+ * @property {Boolean} can_doublejump
+ * @property {Boolean} can_dash
+ * @property {Boolean} gliding
+ * with abilities
+ * @property {Boolean} doublejump_ability
+ * @property {Boolean} glide_ability
+ * @property {Boolean} dash_ability
+ * @property {Boolean} float_ability
+ * with state
+ * @property {{hp: Number, mp: Number, hp_max: Number, mp_max: Number, money: Number, condtion: String, timer_begin: Number, timer_current: Number, timer_end: Number, reviveCooldown: Number}} state
+ */
+class Chara {
+    constructor() {
+        this.loc = {
+            x: 0,
+            y: 0
+        };
+
+        this.vel = {
+            x: 0,
+            y: 0
+        };
+
+        this.aimer = {
+            x: 0,
+            y: 0
+        };
+
+        this.name = "defaultPlayer";
+        this.colour = '#000';
+        this.current_mapId = 0;
+
+        this.can_jump = true;
+        this.doublejumpFlag = false;
+        this.can_doublejump = true;
+
+        this.can_dash = true;
+
+        this.gliding = false;
+
+        this.doublejump_ability = true;
+        this.glide_ability = true;
+        this.dash_ability = true;
+        this.float_ability = true;
+
+        this.buff = [{}];
+        this.equipment = {
+            club: {},
+            heart: {},
+            spade: {},
+            diamond: {},
+        };
+
+        this.state = {
+            hp: 30,
+            mp: 10,
+            hp_max: 30,
+            mp_max: 10,
+            money: 0,
+            condtion: "normal",
+            timer_begin: 0,
+            timer_current: 0,
+            timer_end: 0,
+            // reviveCooldown: 3000,  // 考虑到一些角色可能复活时间不同
+        };
+        this.ip = "";
+    }
+}
+
+/**
+ * @class Player
+ * @property {Chara} chara
+ * @property {WebSocket} ws
+ * @property {{left: Boolean, right: Boolean, up: Boolean, down: Boolean, space: Boolean, key_j: Boolean, key_k: Boolean, mouse_l: Boolean, mouse_m: Boolean, mouse_r: Boolean}} key
+ */
+class Player {
+    constructor() {
+        this.key = {
+            left: false,
+            right: false,
+            up: false,
+            down: false,
+            space: false,
+            key_j: false,
+            key_k: false,
+            mouse_l: false,
+            mouse_m: false,
+            mouse_r: false,
+        };
+        this.chara = new Chara();
+        this.ws = undefined;
+    }
+}
+
+/**
+ * 字典: 索引是ip -> 值为Player对象
+ * @type {Object}
+ * @member {Player} playerDic[ip]
+ */
+const playerDic = {};
+/**
+ * 字典: mapId -> [Bullet]
+ * @type {Array<Array<Bullet>}
+ */
+const bulletDic = [];
+
+
+// div:初始化websocket
 // 以wifi的ip地址作为服务器的ip地址, port: 432 作为端口号
 const wss = new WebSocketServer({
     host: '0.0.0.0',
@@ -21,76 +200,15 @@ wss.on('listening', function() {
     console.log(wss.address());
 });
 
-const playerDic = {};
-
 wss.on('connection', function(ws) {
 
     console.log(`client ${ws._socket.remoteAddress} connected`);
 
     // div: 在playerDic中记录
     let ip = ws._socket.remoteAddress;
-    playerDic[ip] = {
-        key: {
-            left: false,
-            right: false,
-            up: false,
-            down: false,
-            key_j: false,
-            key_k: false
-        },
-        chara: {
-
-            loc: {
-                x: 0,
-                y: 0
-            },
-
-            vel: {
-                x: 0,
-                y: 0
-            },
-
-            name: "defaultPlayer",
-            colour: '#000',
-            current_mapId: 0,
-
-            can_jump: true,
-            doublejumpFlag: false,
-            can_doublejump: true,
-
-            can_dash: true,
-
-            gliding: false,
-
-            doublejump_ability: true,
-            glide_ability: true,
-            dash_ability: true,
-            float_ability: true,
-
-            buff: [{}],
-            equipment: {
-                club: {},
-                heart: {},
-                spade: {},
-                diamond: {},
-            },
-
-            state: {
-                hp: 30,
-                mp: 10,
-                hp_max: 30,
-                mp_max: 10,
-                money: 0,
-                condtion: "normal",
-                timer_begin: 0,
-                timer_current: 0,
-                timer_end: 0,
-                // reviveCooldown: 3000,  // 考虑到一些角色可能复活时间不同
-            },
-            ip: ip,
-        },
-        ws: ws
-    }
+    playerDic[ip] = new Player();
+    playerDic[ip].ws = ws;
+    playerDic[ip].chara.ip = ip;
 
     playerDic[ip].name = ip + "";
     playerDic[ip].chara.loc.x = game.maps[playerDic[ip].chara.current_mapId].player.x;
@@ -215,7 +333,7 @@ class GAME {
         _this.maps[map.mapId].height = 0;
 
         // 把data地图中所有的数字转换为tile对象, 同时记录地图的宽度和高度
-        // todo: 有改动
+        // TODO: 有改动
         _this.maps[map.mapId].height = map.data.length;
 
         map.data.forEach(function(row, y) {
@@ -246,7 +364,7 @@ class GAME {
         }
     }
 
-    get_tile_from_id = function(mapId) {
+    get_tile_from_mapId = function(mapId) {
         let _this = (this)
         return function(x, y) {
             let current_map = _this.maps[mapId];
@@ -312,7 +430,7 @@ class GAME {
 
         let offset = Math.round((this.tile_size / 2) - 1);
 
-        let get_tile = this.get_tile_from_id(player.chara.current_mapId);
+        let get_tile = this.get_tile_from_mapId(player.chara.current_mapId);
         let current_map = _this.maps[player.chara.current_mapId];
 
         let tile = get_tile(
@@ -384,7 +502,7 @@ class GAME {
         }
 
         /* float技能处理 */
-        // todo: 还有一些问题, 有空再处理
+        // TODO: 还有一些问题, 有空再处理
         if (player.chara.float_ability && player.chara.can_float && player.key.key_k == true) {
             for (let p = -3; p < 3; p++) {
                 for (let q = -2; q < 4; q++) {
@@ -490,12 +608,18 @@ class GAME {
         if (typeof current_map.trap === "function") current_map.trap();
     }
 
+    /**
+     * 处理玩家的按键操作, 转化为函数调用
+     * @param {Player} player 玩家
+     */
     update_player = function(player) {
         // 负责通过玩家按键来确定当前的速度和技能使用
         let _this = (this);
         let current_map = _this.maps[player.chara.current_mapId];
 
         // console.log(`player update\nposition: (${player.chara.loc.x},${player.chara.loc.y}); velocity: (${player.chara.vel.x},${player.chara.vel.y})`);
+
+        // 移动相关
 
         if (player.key.left) {
 
@@ -540,35 +664,83 @@ class GAME {
             player.chara.can_float = false;
         }
 
+        // 行动相关
+        if (player.key.mouse_l) {
+            // 射击
+            // TODO: 能否攻击的判断
+            if (player.chara.state.mp > 0) {
+                // 生成一颗子弹
+                let bullet = new Bullet(player);
+                bulletDic[player.chara.current_mapId].push(bullet);
+            }
+        }
+
         this.move_player(player);
+    }
+
+    move_bullet = function(bullet) {
+        let _this = (this);
+        let current_map = _this.maps[bullet.current_mapId];
+        bullet.loc.x += bullet.vel.x;
+        bullet.loc.y += bullet.vel.y;
+        bullet.vel.x += bullet.acc.x;
+        bullet.vel.y += bullet.acc.y;
+        bullet.acc.x += bullet.acc.x;
+        bullet.acc.y += bullet.acc.y;
+        if (bullet.loc.x < 0 || bullet.loc.x > current_map.width_p) {
+            // 超出地图范围, 删除子弹
+            bulletDic[bullet.current_mapId].splice(bulletDic[bullet.current_mapId].indexOf(bullet), 1);
+        }
     }
 
     update = function() {
         for (let player in playerDic) {
             game.update_player(playerDic[player]);
         }
+        bulletDic.forEach((bulletListInMap, mapId) => {
+            bulletListInMap.forEach(bullet => {
+                this.move_bullet(bullet);
+            });
+        });
     }
 
     broadcast = function() {
         // client端: game.draw(ctx, data.map_id, data.players);
         let _this = (this);
-        let allPlayers = Object.values(playerDic).map((player) => player.chara);
+        let allCharas = Object.values(playerDic).map((player) => player.chara);
         let data = {
             map_id: 0,
             players: [],
+            items: [],
+            bullets: [],
             time: new Date().getTime()
         }
+
+        // 提前按地图将三个数组分类
+        let dic = {};
+        _this.maps.forEach(map => {
+            let map_id = map.mapId;
+            dic[map_id] = {
+                players: allCharas.filter((player) => player.current_mapId == map_id),
+                items: [],
+                bullets: bulletDic[map_id] || [],
+            };
+        });
+
         wss.clients.forEach(function(client) {
             // 获取client的ip
             let thisIp = client._socket.remoteAddress;
             if (!playerDic[thisIp]) return;
             data.map_id = playerDic[thisIp].chara.current_mapId;
-            data.players = allPlayers.filter((player) => player.current_mapId == data.map_id);
+            data.players = dic[data.map_id].players;
+            data.items = dic[data.map_id].items;
+            data.bullets = dic[data.map_id].bullets;
+            // 将自己放到数组的第一个位置
             let index = data.players.findIndex((player) => player.ip === thisIp);
             if (index != -1) {
-                // 将自身移动到数组的第一个位置
                 data.players.unshift(data.players.splice(index, 1)[0]);
             } else { console.log(`broadcast函数中: IP为${thisIp}的玩家没找到本人`); }
+
             let message = JSON.stringify(data);
             client.send(message);
         })
