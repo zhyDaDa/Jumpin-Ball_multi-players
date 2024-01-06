@@ -2,6 +2,7 @@ console.log('Server.js 开始运行');
 
 
 const FALLEN_DAMAGE = 10; // 坠落伤害
+const VEL_STILL = 0.05; // 停止速度
 
 
 const fs = require('fs');
@@ -493,13 +494,41 @@ class GAME {
         let right4 = get_tile(t_x_right + 1, y_near2);
 
         // 摩擦系数导致的加速度 a = -μg
-        let friction1 = bottom1.friction ? bottom1.friction.x : 0;
-        let friction2 = bottom2.friction ? bottom2.friction.x : 0;
-        let friction = (friction1 + friction2) / 2;
-        // 判断符号, 摩擦力永远与速度方向相反
-        let a = friction * (tile.gravity || current_map.gravity).y;
-        if (Math.abs(player.chara.vel.x) > 0.05)
-            player.chara.acc.x -= a * Math.sign(player.chara.vel.x);
+        if (player.chara.vel.y > 0 && player.chara.acc.y > 0) {
+            let friction1 = bottom1.friction ? bottom1.friction.x : 0;
+            let friction2 = bottom2.friction ? bottom2.friction.x : 0;
+            let frictionX = (friction1 + friction2) / 2;
+            let a = frictionX * player.chara.acc.y;
+            if (Math.abs(player.chara.vel.x) > VEL_STILL)
+                player.chara.acc.x -= a * Math.sign(player.chara.vel.x);
+        }
+
+        if (player.chara.vel.y < 0 && player.chara.acc.y < 0) {
+            let friction1 = top1.friction ? top1.friction.x : 0;
+            let friction2 = top2.friction ? top2.friction.x : 0;
+            let frictionX = (friction1 + friction2) / 2;
+            let a = frictionX * Math.abs(player.chara.acc.y);
+            if (Math.abs(player.chara.vel.x) > VEL_STILL)
+                player.chara.acc.x -= a * Math.sign(player.chara.vel.x);
+        }
+
+        if (player.chara.vel.x > 0 && player.chara.acc.x > 0) {
+            let friction3 = right1.friction ? right1.friction.y : 0;
+            let friction4 = right2.friction ? right2.friction.y : 0;
+            let frictionY = (friction3 + friction4) / 2;
+            let a = frictionY * player.chara.acc.x;
+            if (Math.abs(player.chara.vel.y) > VEL_STILL)
+                player.chara.acc.y -= a * Math.sign(player.chara.vel.y);
+        }
+
+        if (player.chara.vel.x < 0 && player.chara.acc.x < 0) {
+            let friction3 = left1.friction ? left1.friction.y : 0;
+            let friction4 = left2.friction ? left2.friction.y : 0;
+            let frictionY = (friction3 + friction4) / 2;
+            let a = frictionY * Math.abs(player.chara.acc.x);
+            if (Math.abs(player.chara.vel.y) > VEL_STILL)
+                player.chara.acc.y -= a * Math.sign(player.chara.vel.y);
+        }
 
         if (tile.jump && player.jump_switch > 15) {
 
@@ -518,6 +547,8 @@ class GAME {
         player.chara.vel.y += player.chara.acc.y;
         player.chara.vel.x = Math.min(Math.max(player.chara.vel.x, -current_map.vel_limit.x), current_map.vel_limit.x);
         player.chara.vel.y = Math.min(Math.max(player.chara.vel.y, -current_map.vel_limit.y), current_map.vel_limit.y);
+        if (Math.abs(player.chara.vel.x) < VEL_STILL) player.chara.vel.x = 0;
+        if (Math.abs(player.chara.vel.y) < VEL_STILL) player.chara.vel.y = 0;
 
         /* dash技能处理 */
         if (left1.solid || left2.solid || right1.solid || right2.solid || left3.solid || left4.solid || right3.solid || right4.solid) { player.dash_switch = 0; }
@@ -545,6 +576,31 @@ class GAME {
             player.chara.doublejumpFlag = false;
         }
 
+        /* 瓷砖反弹 */
+        if (left1.solid || left2.solid || right1.solid || right2.solid) {
+            let bounceX = 0;
+
+            if (left1.solid && left1.bounce > bounceX) bounceX = left1.bounce;
+            if (left2.solid && left2.bounce > bounceX) bounceX = left2.bounce;
+            if (right1.solid && right1.bounce > bounceX) bounceX = right1.bounce;
+            if (right2.solid && right2.bounce > bounceX) bounceX = right2.bounce;
+
+            player.chara.vel.x *= -bounceX || 0;
+        }
+        if (top1.solid || top2.solid || bottom1.solid || bottom2.solid) {
+            let bounceY = 0;
+
+            if (top1.solid && top1.bounce > bounceY) bounceY = top1.bounce;
+            if (top2.solid && top2.bounce > bounceY) bounceY = top2.bounce;
+            if (bottom1.solid && bottom1.bounce > bounceY) bounceY = bottom1.bounce;
+            if (bottom2.solid && bottom2.bounce > bounceY) bounceY = bottom2.bounce;
+
+            player.chara.vel.y *= -bounceY || 0;
+        }
+        /* 速度结算 */
+        player.chara.loc.x += player.chara.vel.x;
+        player.chara.loc.y += player.chara.vel.y;
+
         /* 坠落判断 */
         if (player.chara.loc.y > current_map.height_p + 100) {
             // player坠落死亡
@@ -555,11 +611,6 @@ class GAME {
             player.chara.state.timer_current = new Date().getTime();
             return;
         }
-
-        player.chara.loc.x += player.chara.vel.x;
-        player.chara.loc.y += player.chara.vel.y;
-
-        // player.chara.vel.x *= .9;
 
         if (left1.solid || left2.solid || right1.solid || right2.solid) {
 
@@ -572,17 +623,6 @@ class GAME {
             while (get_tile(Math.ceil(player.chara.loc.x / this.tile_size), y_near1).solid ||
                 get_tile(Math.ceil(player.chara.loc.x / this.tile_size), y_near2).solid)
                 player.chara.loc.x -= 0.1;
-
-            /* 瓷砖反弹 */
-
-            let bounce = 0;
-
-            if (left1.solid && left1.bounce > bounce) bounce = left1.bounce;
-            if (left2.solid && left2.bounce > bounce) bounce = left2.bounce;
-            if (right1.solid && right1.bounce > bounce) bounce = right1.bounce;
-            if (right2.solid && right2.bounce > bounce) bounce = right2.bounce;
-
-            player.chara.vel.x *= -bounce || 0;
 
         }
 
@@ -598,17 +638,7 @@ class GAME {
                 get_tile(x_near2, Math.ceil(player.chara.loc.y / this.tile_size)).solid)
                 player.chara.loc.y -= 0.1;
 
-            /* 瓷砖反弹 */
-
-            let bounce = 0;
-
-            if (top1.solid && top1.bounce > bounce) bounce = top1.bounce;
-            if (top2.solid && top2.bounce > bounce) bounce = top2.bounce;
-            if (bottom1.solid && bottom1.bounce > bounce) bounce = bottom1.bounce;
-            if (bottom2.solid && bottom2.bounce > bounce) bounce = bottom2.bounce;
-
-            player.chara.vel.y *= -bounce || 0;
-
+            /* 着地判断 */
             if ((bottom1.solid || bottom2.solid) && !tile.jump) {
 
                 player.chara.on_floor = true;
@@ -622,11 +652,11 @@ class GAME {
 
         }
 
+        // 脚本处理
         if (player.last_tile != tile.id && tile.script) {
             // 如果当前的tile与上一个不同, 则执行这个tile的脚本
             this.map_script(player, tile.script);
         }
-
         player.last_tile = tile.id;
 
         // 如果当前地图有trap, 则执行
