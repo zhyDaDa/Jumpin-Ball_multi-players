@@ -54,6 +54,12 @@ function setServer(serverAddress) {
     socket.onclose = function() {
         console.log("连接关闭");
         document.querySelector("#h6_3").innerHTML = `<font color="red"> 服务器连接已断开 </font>`
+        window.setTimeout(function() {
+            if (window.socket.readyState > 2) {
+                document.querySelector("#h6_3").innerHTML = `<font color="blue"> 尝试重新连接... </font>`
+                setServer(serverAddress);
+            }
+        }, 5000);
     };
     socket_file.onmessage = function(e) {
         game.set_map(JSON.parse(e.data));
@@ -642,7 +648,6 @@ Game.prototype.draw_player_action = function(context) {
 }
 
 Game.prototype.draw_bullets = function(context, bullets) {
-    console.log(`画出${bullets.length}颗子弹`);
     for (let bullet of bullets) {
         this.draw_bullet(context, bullet);
     }
