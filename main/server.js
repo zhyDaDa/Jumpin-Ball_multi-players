@@ -240,6 +240,7 @@ class Chara {
  * @class Player
  * @property {Chara} chara
  * @property {WebSocket} ws
+ * @property {Boolean} isRobo
  * @property {{left: Boolean, right: Boolean, up: Boolean, down: Boolean, space: Boolean, key_j: Boolean, key_k: Boolean, mouse_l: Boolean, mouse_m: Boolean, mouse_r: Boolean}} key
  */
 class Player {
@@ -260,6 +261,7 @@ class Player {
         };
         this.chara = new Chara();
         this.ws = undefined;
+        this.isRobo = false;
     }
 }
 
@@ -789,10 +791,29 @@ class GAME {
     }
 
     /**
+     * 处理robo, 模拟玩家控件的行为
+     * @param {Player} player 玩家
+     */
+    update_robo = function(player) {
+        if (player.chara.vel.x > 0) {
+            player.key.left = false;
+            player.key.right = true;
+        } else {
+            player.key.left = true;
+            player.key.right = false;
+        }
+
+    }
+
+
+    /**
      * 处理玩家的按键操作, 转化为函数调用
      * @param {Player} player 玩家
      */
     update_player = function(player) {
+        if (player.isRobo) {
+            this.update_robo(player);
+        }
         // 负责通过玩家按键来确定当前的速度和技能使用
         let _this = (this);
         let current_map = _this.maps[player.chara.current_mapId];
@@ -939,6 +960,14 @@ class GAME {
 
 let game = new GAME();
 // game.load_map();
+let robo = new Player();
+robo.isRobo = true;
+playerDic["robo"] = robo;
+robo.chara.name = "robo";
+robo.chara.colour = '#000000';
+robo.chara.current_mapId = 0;
+robo.chara.loc.x = game.maps[robo.chara.current_mapId].player.x;
+robo.chara.loc.y = game.maps[robo.chara.current_mapId].player.y;
 
 setInterval(() => {
     game.update();

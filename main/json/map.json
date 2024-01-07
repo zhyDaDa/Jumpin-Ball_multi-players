@@ -14,7 +14,7 @@
             "1": { "id": 1, "colour": "#12aaf8", "solid": 0, "friction": { "x": 0.01, "y": 0.01 } },
             "2": { "id": 2, "colour": "#046292", "solid": 1, "bounce": 0.2, "friction": { "x": 0.6, "y": 0.6 } },
             "3": { "id": 3, "colour": "#405756", "solid": 1, "bounce": 0.2 },
-            "5": { "id": 5, "colour": "#E373FA", "solid": 1, "bounce": 1.1, "friction": { "x": 0.8, "y": 0.8 } },
+            "5": { "id": 5, "colour": "#E373FA", "solid": 1, "bounce": 1.1, "friction": { "x": 2, "y": 2 } },
             "6": { "id": 6, "colour": "#666", "solid": 1, "bounce": 0, "friction": { "x": 0.2, "y": 0.2 } },
             "7": { "id": 7, "colour": "#aaa", "solid": 1, "bounce": 0, "friction": { "x": 1, "y": 1 } },
             "81": { "id": 81, "colour": "#e1ed59", "solid": 0, "script": ["teleport_map", 1] }
