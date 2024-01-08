@@ -7,6 +7,9 @@ const nameMaxLength = 15;
 const HPBarColor = '#ff5555aa';
 const HPBarWidth = 30;
 const HPBarHeight = 4;
+const UI_BarColor_underlay = '#22222266';
+const UI_HPBarColor_front = '#02b05d';
+const UI_MPBarColor_front = '#19699f';
 let zoomIndex = 1.2;
 const player_info_fontSize = 12;
 const cursor_size = 20;
@@ -676,6 +679,73 @@ Game.prototype.draw_bullet = function(context, bullet) {
     context.closePath();
 }
 
+Game.prototype.drawUI = function(context) {
+    let unit_x = this.viewport.x / 100;
+    let unit_y = this.viewport.y / 100;
+
+    let UI_digitLineWidth = 0.8;
+    let UI_lefttop_x = 1.8 * unit_x;
+    let UI_lefttop_y = 1.8 * unit_y;
+    let UI_HPBarHeight = 2 * unit_y;
+    let UI_MPBarHeight = 1.8 * unit_y;
+    let UI_unitlength = 0.75 * unit_x;
+    let overblood = 0.2;
+    let UI_margin_x = 0.7 * unit_x;
+    let UI_margin_y = 0.7 * unit_y;
+
+    let x, y;
+
+    // 绘制血量条
+    context.beginPath();
+    context.fillStyle = UI_BarColor_underlay;
+    x = UI_lefttop_x;
+    y = UI_lefttop_y;
+    context.fillRect(x - overblood * UI_unitlength,
+        y - overblood * UI_unitlength,
+        this.player.state.hp_max * UI_unitlength + overblood * 2 * UI_unitlength,
+        UI_HPBarHeight + overblood * 2 * UI_unitlength);
+
+    context.fillStyle = UI_HPBarColor_front;
+    context.fillRect(x, y, this.player.state.hp * UI_unitlength, UI_HPBarHeight);
+
+
+    context.lineWidth = UI_digitLineWidth;
+    context.font = player_info_fontSize + "px Arial";
+    let text = this.player.state.hp + " / " + this.player.state.hp_max;
+    let textWidth = context.measureText(text).width;
+    let center_x = x + this.player.state.hp_max * UI_unitlength / 2;
+    let center_y = y + UI_HPBarHeight / 2;
+    context.strokeStyle = "white";
+    context.strokeText(text,
+        center_x - textWidth / 2,
+        center_y + player_info_fontSize / 2);
+
+    // 绘制蓝条
+    context.beginPath();
+    context.fillStyle = UI_BarColor_underlay;
+    x = UI_lefttop_x;
+    y += UI_HPBarHeight + UI_margin_y;
+    context.fillRect(x - overblood * UI_unitlength,
+        y - overblood * UI_unitlength,
+        this.player.state.mp_max * UI_unitlength + overblood * 2 * UI_unitlength,
+        UI_MPBarHeight + overblood * 2 * UI_unitlength);
+
+    context.fillStyle = UI_MPBarColor_front;
+    context.fillRect(x, y, this.player.state.mp * UI_unitlength, UI_MPBarHeight);
+
+    context.lineWidth = UI_digitLineWidth;
+    context.font = player_info_fontSize + "px Arial";
+    text = this.player.state.mp + " / " + this.player.state.mp_max;
+    textWidth = context.measureText(text).width;
+    center_x = x + this.player.state.mp_max * UI_unitlength / 2;
+    center_y = y + UI_MPBarHeight / 2;
+    context.strokeStyle = "white";
+    context.strokeText(text,
+        center_x - textWidth / 2,
+        center_y + player_info_fontSize / 2);
+
+}
+
 Game.prototype.draw = function(context, map_id, players, items, bullets) {
     // 如果地图改变, 重新加载
     if (!this.current_map || map_id != this.current_map.mapId) this.load_map(map_id);
@@ -699,20 +769,8 @@ Game.prototype.draw = function(context, map_id, players, items, bullets) {
     // 画出子弹
     this.draw_bullets(context, bullets);
 
-    // context.fillStyle = '#f00';
-    // context.fillRect(
-    //     // Math.round(camera.x - this.viewport.x / 2 + this.tile_size) / zoomIndex,
-    //     // Math.round(camera.y - this.viewport.y / 2 + this.tile_size) / zoomIndex,
-    //     this.player.loc.x - this.camera.x,
-    //     this.player.loc.y - this.camera.y,
-    //     // this.viewport.x / 2,
-    //     // this.viewport.y / 2,
-    //     // this.mouse.x,
-    //     // this.mouse.y,
-    //     1,
-    //     1
-    // );
-    // console.log(this.viewport);
+    // 渲染UI
+    this.drawUI(context);
 
     // 调整相机位置
     this.update_camera(this.player.loc.x, this.player.loc.y, false);
