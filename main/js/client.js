@@ -374,8 +374,8 @@ Game.prototype.draw_tile = function(x, y, tile, context) {
 
     context.fillStyle = tile.colour;
     context.fillRect(
-        x,
-        y,
+        x - this.tile_size / 2,
+        y - this.tile_size / 2,
         this.tile_size,
         this.tile_size
     );
@@ -430,8 +430,8 @@ Game.prototype.draw_player = function(context, player) {
     context.fillStyle = player.colour || "oranges";
     context.beginPath();
     context.arc(
-        player.loc.x + this.tile_size / 2 - this.camera.x,
-        player.loc.y + this.tile_size / 2 - this.camera.y,
+        player.loc.x - this.camera.x,
+        player.loc.y - this.camera.y,
         this.tile_size / 2 - 1,
         0,
         Math.PI * 2
@@ -454,8 +454,8 @@ Game.prototype.draw_player = function(context, player) {
         context.lineDashOffset = 0;
         context.setLineDash([c / sliceNum * 2 / 3, c / sliceNum / 3]);
         context.arc(
-            player.loc.x + this.tile_size / 2 - this.camera.x,
-            player.loc.y + this.tile_size / 2 - this.camera.y,
+            player.loc.x - this.camera.x,
+            player.loc.y - this.camera.y,
             radius,
             0 + new Date().getTime() / interval % (16) * (2 * Math.PI / 16),
             (2 * Math.PI) + new Date().getTime() / interval % (16) * (2 * Math.PI / 16)
@@ -468,8 +468,8 @@ Game.prototype.draw_player = function(context, player) {
         context.beginPath();
         context.fillStyle = "white";
         context.fillRect(
-            player.loc.x - this.camera.x + this.tile_size / 2 - span / 4,
-            player.loc.y - this.camera.y + this.tile_size + 8,
+            player.loc.x - this.camera.x - span / 4,
+            player.loc.y - this.camera.y + this.tile_size / 2 + 8,
             span / 2 * (player.state.timer_current - player.state.timer_begin) / (player.state.timer_end - player.state.timer_begin),
             HPBarHeight);
         context.closePath();
@@ -484,8 +484,8 @@ Game.prototype.draw_player = function(context, player) {
         let radius = this.tile_size * .5 + 3;
         let c = 2 * Math.PI * radius;
         context.arc(
-            player.loc.x + this.tile_size / 2 - this.camera.x,
-            player.loc.y + this.tile_size / 2 - this.camera.y,
+            player.loc.x - this.camera.x,
+            player.loc.y - this.camera.y,
             radius,
             0, Math.PI,
             true
@@ -503,17 +503,17 @@ Game.prototype.draw_player = function(context, player) {
     // 为了让文字更清晰, 在文字下方画一个白色矩形
     context.beginPath();
     context.fillStyle = "#ffffff66";
-    context.fillRect(player.loc.x - this.camera.x + this.tile_size / 2 - span / 2, player.loc.y - this.camera.y - this.tile_size / 2 - player_info_fontSize - 1, span, player_info_fontSize + 2);
+    context.fillRect(player.loc.x - this.camera.x - span / 2, player.loc.y - this.camera.y - this.tile_size - player_info_fontSize - 1, span, player_info_fontSize + 2);
     // context.closePath();
     // 居中绘制玩家名字, 黑字白色描边
     context.fillStyle = "black";
-    // x方向正中间是 loc.x - camera.x + 半个格子
-    // y方向正中间是 loc.y - camera.y + 半个格子
+    // x方向正中间是 loc.x - camera.x
+    // y方向正中间是 loc.y - camera.y
     // 向左挪半个文字宽度, 向上挪一个格子
     context.fillText(
         player.name,
-        player.loc.x - this.camera.x + this.tile_size / 2 - textWidth / 2,
-        player.loc.y - this.camera.y - this.tile_size / 2);
+        player.loc.x - this.camera.x - textWidth / 2,
+        player.loc.y - this.camera.y - this.tile_size);
     context.closePath();
 
 
@@ -521,8 +521,8 @@ Game.prototype.draw_player = function(context, player) {
     context.beginPath();
     context.fillStyle = HPBarColor;
     context.fillRect(
-        player.loc.x - this.camera.x + this.tile_size / 2 - span / 2,
-        player.loc.y - this.camera.y - this.tile_size / 2 - player_info_fontSize - HPBarHeight,
+        player.loc.x - this.camera.x - span / 2,
+        player.loc.y - this.camera.y - this.tile_size - player_info_fontSize - HPBarHeight,
         span * player.state.hp / player.state.hp_max,
         HPBarHeight);
     context.closePath();
@@ -534,8 +534,8 @@ Game.prototype.update = function() {
 };
 
 Game.prototype.update_camera = function(target_x, target_y, direct) {
-    var c_x = Math.round(target_x - this.viewport.x / 2 + this.tile_size / 2);
-    var c_y = Math.round(target_y - this.viewport.y / 2 + this.tile_size / 2);
+    var c_x = Math.round(target_x - this.viewport.x / 2);
+    var c_y = Math.round(target_y - this.viewport.y / 2);
     var x_dif = Math.abs(c_x - this.camera.x);
     var y_dif = Math.abs(c_y - this.camera.y);
 
@@ -703,8 +703,8 @@ Game.prototype.draw = function(context, map_id, players, items, bullets) {
     // context.fillRect(
     //     // Math.round(camera.x - this.viewport.x / 2 + this.tile_size) / zoomIndex,
     //     // Math.round(camera.y - this.viewport.y / 2 + this.tile_size) / zoomIndex,
-    //     this.player.loc.x + this.tile_size / 2 - this.camera.x,
-    //     this.player.loc.y + this.tile_size / 2 - this.camera.y,
+    //     this.player.loc.x - this.camera.x,
+    //     this.player.loc.y - this.camera.y,
     //     // this.viewport.x / 2,
     //     // this.viewport.y / 2,
     //     // this.mouse.x,
