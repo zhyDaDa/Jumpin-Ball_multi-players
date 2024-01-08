@@ -1,6 +1,7 @@
 * {
     margin: 0;
     padding: 0;
+    transition: all 0.3s ease;
 }
 
 body {
@@ -9,8 +10,8 @@ body {
 
 canvas {
     display: block;
-    border: 1px solid #333;
-    box-shadow: 0 0 6px 2px rgba(0, 0, 0, 0.8);
+    border: 1px solid #999;
+    /* box-shadow: 0 0 6px 2px rgba(0, 0, 0, 0.8); */
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
@@ -75,8 +76,8 @@ h6 {
 
 #tipBoard {
     display: block;
-    width: 320px;
-    height: 385px;
+    /* width: 320px; */
+    height: 40vh;
     background-color: #CCC8D5BB;
     color: #333;
     border-radius: 12px;
@@ -84,8 +85,65 @@ h6 {
     font-size: 25px;
     line-height: 1.5em;
     position: fixed;
-    left: 5px;
-    top: 5px;
+    left: 1vh;
+    top: 99vh;
+    transform: translateY(-100%);
     z-index: 100;
     padding: 1rem;
+}
+
+.serverDelay {
+    color: darkgreen;
+}
+
+.renderDelay {
+    color: darkblue;
+}
+
+#settingPanel {
+    background-color: #CCC8D5BB;
+    display: grid;
+    width: 20vw;
+    height: 6vh;
+    font-size: xx-small;
+    position: fixed;
+    left: 1vh;
+    top: 99vh;
+    transform: translateY(-6vh);
+    z-index: 150;
+    grid-template-areas: "button serverDelay" "button renderDelay" "button fps";
+    grid-template-rows: 2vh 2vh 2vh;
+    grid-template-columns: 4vw auto;
+    padding-left: 0.2vw;
+}
+
+#settingPanel>button {
+    margin: 20% 5%;
+    color: #333;
+    text-align: center;
+    line-height: 1.5em;
+    position: relative;
+    grid-area: button;
+    border: none;
+}
+
+#settingPanel>p {
+    font-size: 1.75vh;
+    text-align: left;
+    height: 2vh;
+    color: #333;
+    /* line-height: 2vh; */
+    transform: translateY(-100%);
+}
+
+#settingPanel>#serverDelay {
+    grid-area: serverDelay;
+}
+
+#settingPanel>#renderDelay {
+    grid-area: renderDelay;
+}
+
+#settingPanel>#fps {
+    grid-area: fps;
 }

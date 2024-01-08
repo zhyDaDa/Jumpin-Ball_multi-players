@@ -16,6 +16,8 @@ const cursor_size = 20;
 
 /* div: 服务器连接 */
 
+let fpsBuffer = [new Date().getTime(), 0];
+
 function setServer(serverAddress) {
     serverAddress = serverAddress || "ws://127.0.0.1:432";
     if (serverAddress.indexOf("ws") < 0) serverAddress = "ws://" + serverAddress + ":432";
@@ -29,7 +31,8 @@ function setServer(serverAddress) {
     socket.onopen = function() {
         console.log("成功连接到服务器");
         // alert("成功连接到服务器");
-        document.querySelector("#h6_3").innerHTML = `<font color="green"> 成功连接到服务器 </font>`
+        document.querySelector("#h6_3").innerHTML = `<font color="green"> 成功连接到服务器 </font>`;
+        // 取消鼠标显示
     };
     /* div: 接收消息 */
     socket.onmessage = function(e) {
@@ -51,8 +54,18 @@ function setServer(serverAddress) {
 
         // 更新延迟显示
         let renderLatency = Date.now() - receiveTime;
-        document.querySelector("#serverDelay").innerText = latency;
-        document.querySelector("#renderDelay").innerText = renderLatency;
+        document.querySelectorAll(".serverDelay").forEach(el => el.innerText = latency);
+        document.querySelectorAll(".renderDelay").forEach(el => el.innerText = renderLatency);
+
+        // 计算fps
+        if (fpsBuffer[1] < 24) {
+            fpsBuffer[1]++;
+        } else {
+            let fps = Math.round(fpsBuffer[1] / (new Date().getTime() - fpsBuffer[0]) * 1000);
+            document.querySelectorAll(".fps").forEach(el => el.innerText = fps);
+            fpsBuffer = [new Date().getTime(), 0];
+        }
+
     };
     socket.onclose = function() {
         console.log("连接关闭");
