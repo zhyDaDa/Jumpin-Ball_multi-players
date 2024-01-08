@@ -403,8 +403,8 @@ Game.prototype.draw_map = function(context) {
                 // 如果这个tile在视口之外, 跳过
                 if (t_x < -this.tile_size ||
                     t_y < -this.tile_size ||
-                    t_x > this.viewport.x ||
-                    t_y > this.viewport.y) continue;
+                    t_x > this.viewport.x + this.tile_size ||
+                    t_y > this.viewport.y + this.tile_size) continue;
 
                 this.draw_tile(
                     t_x,
