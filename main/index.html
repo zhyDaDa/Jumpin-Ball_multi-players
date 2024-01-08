@@ -44,6 +44,38 @@
             </h6>
             <h6 id="h6_6">视图缩放倍率: &nbsp;<input id="viewScale" type="range" min="0.2" max="2" step="0.01" value="1.2" style="width: 50%;" tabindex="-1" /></h6>
         </div>
+        <div class="leaderboard-container">
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>Player</th>
+                        <th>hp</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderBoard">
+                    <tr>
+                        <td id="player1">defaultPlayer</td>
+                        <td id="hp">20</td>
+                    </tr>
+                    <tr>
+                        <td id="player1">defaultPlayer</td>
+                        <td id="hp">20</td>
+                    </tr>
+                    <tr>
+                        <td id="player1">defaultPlayer</td>
+                        <td id="hp">20</td>
+                    </tr>
+                    <tr>
+                        <td id="player1">defaultPlayer</td>
+                        <td id="hp">20</td>
+                    </tr>
+                    <tr>
+                        <td id="player1">defaultPlayer</td>
+                        <td id="hp">20</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
         <canvas id="canvas" style="width: 100vw;height: 100vh; cursor:crosshair"></canvas>
 
 
@@ -54,7 +86,8 @@
         window.onload = function() {
             document.getElementById("showTipBoard").onclick = function() {
                 let tipBoard = document.getElementById("tipBoard");
-                tipBoard.setAttribute("style", "display:" + (tipBoard.style.display == "block" ? "none" : "block"));
+                tipBoard.setAttribute("style", "display:" + (tipBoard.style.display == "block" ? "none" :
+                    "block"));
             }
             $('#addressForm').on('submit', function(e) {
                 e.preventDefault();

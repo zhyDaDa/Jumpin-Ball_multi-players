@@ -52,6 +52,9 @@ function setServer(serverAddress) {
         game.player = deepCopy(data.players[0]);
         game.draw(ctx, data.map_id, data.players, data.items, data.bullets);
 
+        // 更新leaderBoard
+        game.update_leaderBoard(data.players);
+
         // 更新延迟显示
         let renderLatency = Date.now() - receiveTime;
         document.querySelectorAll(".serverDelay").forEach(el => el.innerText = latency);
@@ -611,6 +614,23 @@ Game.prototype.update_camera = function(target_x, target_y, direct) {
         }
     }
 };
+
+Game.prototype.update_leaderBoard = function(players) {
+    // 更新leaderBoard
+    let leaderBoard = document.getElementById("leaderBoard");
+    let leaderHTML = "";
+    // 排序
+    players.sort((a, b) => b.state.hp - a.state.hp);
+    for (let player of players) {
+        leaderHTML += `
+        <tr>
+            <td>${player.name}</td>
+            <td>${player.state.hp}</td>
+        </tr>
+        `;
+    }
+    leaderBoard.innerHTML = leaderHTML;
+}
 
 Game.prototype.draw_cursor = function(context) {
     const _this = (this);

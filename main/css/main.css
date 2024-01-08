@@ -111,7 +111,7 @@ h6 {
     top: 99vh;
     transform: translateY(-6vh);
     z-index: 150;
-    grid-template-areas: "button serverDelay" "button renderDelay" "button fps";
+    grid-template-areas: "button serverDelay""button renderDelay""button fps";
     grid-template-rows: 2vh 2vh 2vh;
     grid-template-columns: 4vw auto;
     padding-left: 0.2vw;
@@ -146,4 +146,58 @@ h6 {
 
 #settingPanel>#fps {
     grid-area: fps;
+}
+
+.leaderboard-container {
+    max-height: 18vh;
+    width: 12vw;
+    top: 1vh;
+    right: 1vh;
+    position: fixed;
+    overflow-y: auto;
+    background-color: #aaaaaa66;
+    padding: 0.2rem;
+    z-index: 100;
+    user-select: none;
+}
+
+.leaderboard-container::-webkit-scrollbar {
+    width: 0.3rem;
+}
+
+.leaderboard-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.leaderboard-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 2px;
+}
+
+.leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.leaderboard-table tr {
+    height: 1.8vh;
+    font-size: 1.8vh;
+    color: ghostwhite;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+    padding: .2rem;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.leaderboard-table th {
+    height: 2vh;
+    font-size: 2vh;
+    position: sticky;
+    top: 0;
+    background-color: #f2f2f2;
+    color: #333;
+    z-index: 1;
 }
