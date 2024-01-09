@@ -167,6 +167,15 @@ class Spade {
         this.info = _info;
         this.id = this.id_iterator++;
 
+        this.ammo_max = 10;
+        this.ammo = 10;
+        this.delay = 300;
+        this.reload = 1000;
+
+        this.lastfire = 0;
+        this.state = "ready"; // ready, firing, reloading
+        this.startReload = 0;
+
         this.bullet_state = {
             type: enums.BULLET_TYPE_NORMAL,
             speed: 12,
@@ -178,6 +187,15 @@ class Spade {
     }
 
     id_iterator = 0;
+
+    update() {
+        if (this.state == "reloading") {
+            if (new Date().getTime() - this.startReload >= this.reload) {
+                this.ammo = this.ammo_max;
+                this.state = "ready";
+            }
+        }
+    }
 }
 
 /**
@@ -303,6 +321,7 @@ class Player {
             space: false,
             key_j: false,
             key_k: false,
+            reload: false,
             mouse_l: false,
             mouse_m: false,
             mouse_r: false,
@@ -312,6 +331,7 @@ class Player {
         this.chara = new Chara();
         this.ws = undefined;
         this.isRobo = false;
+        this.time = 0;
     }
 }
 
@@ -855,12 +875,19 @@ class GAME {
 
     }
 
+    update_items = function(player) {
+        // 处理玩家的装备
+        let equipment = player.chara.equipment;
+        if (equipment.club) equipment.club.update();
+    }
+
 
     /**
      * 处理玩家的按键操作, 转化为函数调用
      * @param {Player} player 玩家
      */
     update_player = function(player) {
+        player.time = new Date().getTime();
         if (player.isRobo) {
             this.update_robo(player);
         }
@@ -919,19 +946,40 @@ class GAME {
         // 行动相关
         if (player.key.mouse_l) {
             // 射击
-            // TODO: 能否攻击的判断(涉及到reload)
-            if (true) {
-                // 生成一颗子弹
-                let bullet = new Bullet(player);
-                if (bulletDic[player.chara.current_mapId]) {
-                    bulletDic[player.chara.current_mapId].push(bullet);
-                } else {
-                    bulletDic[player.chara.current_mapId] = [bullet];
+            let club = player.chara.equipment.club;
+            if (club) {
+                // 1. 有子弹 2. 不在"reloading"状态 3. delay 之后
+                if (club.ammo < 1) {
+                    // 提醒玩家reload
+                } else if (club.state == "reloading") {
+                    // 提醒玩家正在reload
+                } else if (player.time < club.lastfire + club.delay) {
+                    // 提醒玩家需要等待
+                } else { // 能生成一颗子弹
+                    let bullet = new Bullet(player);
+                    if (bulletDic[player.chara.current_mapId]) {
+                        bulletDic[player.chara.current_mapId].push(bullet);
+                    } else {
+                        bulletDic[player.chara.current_mapId] = [bullet];
+                    }
+
+                    club.ammo--;
+                    club.lastfire = player.time;
+                    club.state = "firing";
                 }
+            }
+        }
+        if (player.key.reload) {
+            let club = player.chara.equipment.club;
+            if (club && club.ammo < club.ammo_max && club.state != "reloading") {
+                // 开始reload
+                club.state = "reloading";
+                club.startReload = player.time;
             }
         }
 
         this.move_player(player);
+        this.update_items(player);
     }
 
     /**

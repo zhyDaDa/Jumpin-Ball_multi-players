@@ -146,6 +146,7 @@ var Game = function() {
         space: false,
         key_j: false,
         key_k: false,
+        reload: false,
         mouse_l: false,
         mouse_m: false,
         mouse_r: false,
@@ -246,6 +247,10 @@ Game.prototype.keydown = function(e) {
         case 75: //k
             _this.key.key_k = true;
             break;
+        case 82: //r
+            _this.key.reload = true;
+            break;
+        default:
             // case 79: //o
             //     this.load_map(0);
             //     break;
@@ -292,6 +297,10 @@ Game.prototype.keyup = function(e) {
         case 75: //k
             _this.key.key_k = false;
             break;
+        case 82: //r
+            _this.key.reload = true;
+            break;
+        default:
     }
     tellServer();
 };
@@ -825,9 +834,8 @@ Game.prototype.drawUI = function(context) {
         context.fillRect(x + overblood, y + overblood, UI_weaponPicBox_width - overblood * 2, UI_weaponPicBox_height - overblood * 2);
     }
 
-    let UI_WeaponNameHeight = 2.4 * unit_y;
-
     // 在其上绘制武器名称
+    let UI_WeaponNameHeight = 2.4 * unit_y;
     y -= UI_margin_y + UI_WeaponNameHeight;
     context.fillStyle = "#eeeeee88";
     context.fillRect(x, y, UI_weaponPicBox_width, UI_WeaponNameHeight);
@@ -840,6 +848,14 @@ Game.prototype.drawUI = function(context) {
     context.fillText(text,
         center_x - textWidth / 2,
         center_y + UI_WeaponNameHeight / 2);
+
+    // 在武器左侧画出ammo
+    let ammoBoxWidth = 2 * unit_x;
+    let ammoBoxHeight = UI_weaponPicBox_height + UI_WeaponNameHeight + UI_margin_y;
+    context.fillStyle = UI_BarColor_underlay;
+    x -= UI_margin_x + ammoBoxWidth;
+    context.fillRect(x, y, ammoBoxWidth, ammoBoxHeight);
+
 
 }
 
