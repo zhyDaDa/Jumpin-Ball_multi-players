@@ -97,7 +97,7 @@ class Bullet {
         this.effect = 0; // BULLET_EFFECT_NONE, BULLET_EFFECT_FREEZE, BULLET_EFFECT_BURN
 
         this.colour = "#f00";
-        this.size = 50;
+        this.size = 20;
         this.shape = 0; // BULLET_SHAPE_CIRCLE, BULLET_SHAPE_RECT
 
         this.init(); // 根据type初始化
@@ -109,7 +109,7 @@ class Bullet {
         switch (this.type) {
             case enums.BULLET_TYPE_NORMAL:
             default:
-                this.size = 50;
+                this.size = 20;
                 this.shape = enums.SHAPE_CIRCLE;
                 this.colour = "#f00";
                 this.acc = { x: 0, y: 0 };
@@ -141,7 +141,7 @@ class Bullet {
 }
 
 /** 
- * @class Item
+ * @class Spade
  * @property {number} id
  * @property {string} name
  * @property {string} pic_src
@@ -154,10 +154,10 @@ class Bullet {
  * with spade
  * @property {{type: number, speed: number, damage_direct: number, damage_slice: number, damage_continuous: number, damage_explosion: number}} bullet_state
  */
-class Item {
-    constructor(_name = "default Item", _pic_src = "", _type = 0, _class = 0, _tier = 0, _price = 0, _colour = "#000", _info = "物品说明") {
+class Spade {
+    constructor(_name = "default spade", _pic_src = "default_src", _type = 0, _class = 0, _tier = 0, _price = 0, _colour = "#000", _info = "物品说明") {
         this.name = _name;
-        this.pic_src = _pic_src;
+        this.pic_src = _pic_src || this.name;
         this.type = _type; // ITEM_TYPE_SPADE, ITEM_TYPE_CLUB, ITEM_TYPE_HEART, ITEM_TYPE_DIAMOND
         this.class = _class; // ITEM_CLASS_WHITE, ITEM_CLASS_BLACK
         this.tier = _tier;
@@ -261,7 +261,7 @@ class Chara {
 
         this.buff = [{}];
         this.equipment = {
-            club: new Item(),
+            club: new Spade(),
             heart: {},
             spade: {},
             diamond: {},
@@ -280,6 +280,9 @@ class Chara {
             // reviveCooldown: 3000,  // 考虑到一些角色可能复活时间不同
         };
         this.ip = "";
+
+        this.equipment.club.name = "basic pistal";
+        this.equipment.club.pic_src = "basic pistal";
     }
 }
 
@@ -1029,9 +1032,32 @@ const wss_file = new WebSocketServer({
 wss_file.on('connection', function(ws) {
     console.log(`file client ${ws._socket.remoteAddress} connected`);
     ws.on('message', function(message) {
-        let mapId = JSON.parse(message).map_id;
-        let map = game.maps[mapId];
-        ws.send(JSON.stringify(map));
+        let obj = JSON.parse(message);
+        switch (obj.type) {
+            case "map":
+                let mapId = obj.map_id;
+                let map = game.maps[mapId];
+                ws.send(JSON.stringify({
+                    type: "map",
+                    data: map
+                }));
+                break;
+            case "item_pic":
+                // 根据obj.pic_src去images里找图片, 转换为base64
+                let pic_src = obj.pic_src;
+                let pic = fs.readFileSync(`main/images/${pic_src}.png`);
+                let src = "data:image/png;base64," + pic.toString("base64");
+                ws.send(JSON.stringify({
+                    type: "item_pic",
+                    data: {
+                        pic_src: pic_src,
+                        src: src
+                    }
+                }));
+                break;
+            default:
+                break;
+        }
     })
     ws.on('close', function() {
         console.log(`file client ${ws._socket.remoteAddress} disconnected`);

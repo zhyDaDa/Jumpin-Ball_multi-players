@@ -15,6 +15,12 @@ let zoomIndex = 1.2;
 const player_info_fontSize = 12;
 const cursor_size = 20;
 
+/**
+ * 存放物品图片
+ * pic_src => base64的src
+ */
+const picDic = {};
+
 /* div: 服务器连接 */
 
 let fpsBuffer = [new Date().getTime(), 0];
@@ -82,7 +88,17 @@ function setServer(serverAddress) {
         }, 5000);
     };
     socket_file.onmessage = function(e) {
-        game.set_map(JSON.parse(e.data));
+        let obj = JSON.parse(e.data);
+        switch (obj.type) {
+            case "map":
+                game.set_map(obj.data);
+                break;
+            case "item_pic":
+                picDic[obj.data.pic_src] = obj.data.src;
+                break;
+            default:
+                break;
+        }
     }
 }
 
@@ -324,7 +340,7 @@ Game.prototype.mouseUp = function(e) {
 
 Game.prototype.load_map = function(map_id) {
     // 从服务器加载地图
-    socket_file.send(JSON.stringify({ map_id: map_id }));
+    socket_file.send(JSON.stringify({ type: "map", map_id: map_id }));
 }
 
 Game.prototype.set_map = function(map) {
@@ -723,7 +739,7 @@ Game.prototype.drawUI = function(context) {
     let UI_HPBarHeight = 2 * unit_y;
     let UI_MPBarHeight = 1.8 * unit_y;
     let UI_unitlength = 0.75 * unit_x;
-    let overblood = 0.2;
+    let overblood = 0.2 * UI_unitlength;
     let UI_margin_x = 0.7 * unit_x;
     let UI_margin_y = 0.7 * unit_y;
 
@@ -734,10 +750,10 @@ Game.prototype.drawUI = function(context) {
     context.fillStyle = UI_BarColor_underlay;
     x = UI_lefttop_x;
     y = UI_lefttop_y;
-    context.fillRect(x - overblood * UI_unitlength,
-        y - overblood * UI_unitlength,
-        this.player.state.hp_max * UI_unitlength + overblood * 2 * UI_unitlength,
-        UI_HPBarHeight + overblood * 2 * UI_unitlength);
+    context.fillRect(x - overblood,
+        y - overblood,
+        this.player.state.hp_max * UI_unitlength + overblood * 2,
+        UI_HPBarHeight + overblood * 2);
 
     context.fillStyle = UI_HPBarColor_front;
     context.fillRect(x, y, this.player.state.hp * UI_unitlength, UI_HPBarHeight);
@@ -759,10 +775,10 @@ Game.prototype.drawUI = function(context) {
     context.fillStyle = UI_BarColor_underlay;
     x = UI_lefttop_x;
     y += UI_HPBarHeight + UI_margin_y;
-    context.fillRect(x - overblood * UI_unitlength,
-        y - overblood * UI_unitlength,
-        this.player.state.mp_max * UI_unitlength + overblood * 2 * UI_unitlength,
-        UI_MPBarHeight + overblood * 2 * UI_unitlength);
+    context.fillRect(x - overblood,
+        y - overblood,
+        this.player.state.mp_max * UI_unitlength + overblood * 2,
+        UI_MPBarHeight + overblood * 2);
 
     context.fillStyle = UI_MPBarColor_front;
     context.fillRect(x, y, this.player.state.mp * UI_unitlength, UI_MPBarHeight);
@@ -779,7 +795,51 @@ Game.prototype.drawUI = function(context) {
         center_y + player_info_fontSize / 2);
 
     // 绘制武器
+    let UI_rightbottom_x = this.viewport.x - UI_lefttop_x;
+    let UI_rightbottom_y = this.viewport.y - UI_lefttop_y;
 
+    let UI_weaponPicBox_width = 8 * unit_x;
+    let UI_weaponPicBox_height = 8 * unit_y;
+
+    x = UI_rightbottom_x - UI_weaponPicBox_width;
+    y = UI_rightbottom_y - UI_weaponPicBox_height;
+
+    context.beginPath();
+    context.fillStyle = UI_BarColor_underlay;
+    context.fillRect(x, y, UI_weaponPicBox_width, UI_weaponPicBox_height);
+
+    // 绘制武器png
+    if (picDic[this.player.equipment.club.pic_src]) {
+        let img = new Image();
+        img.src = picDic[this.player.equipment.club.pic_src];
+        // 居中绘制
+        let scale = Math.min((UI_weaponPicBox_width - overblood * 2) / img.width, (UI_weaponPicBox_height - overblood * 2) / img.height);
+        let drawWidth = img.width * scale;
+        let drawHeight = img.height * scale;
+        context.drawImage(img, x + UI_weaponPicBox_width / 2 - drawWidth / 2, y + UI_weaponPicBox_height / 2 - drawHeight / 2, drawWidth, drawHeight);
+    } else {
+        // 请求图片
+        socket_file.send(JSON.stringify({ type: "item_pic", pic_src: this.player.equipment.club.pic_src }));
+        // 绘制默认图片
+        context.fillStyle = "black";
+        context.fillRect(x + overblood, y + overblood, UI_weaponPicBox_width - overblood * 2, UI_weaponPicBox_height - overblood * 2);
+    }
+
+    let UI_WeaponNameHeight = 2.4 * unit_y;
+
+    // 在其上绘制武器名称
+    y -= UI_margin_y + UI_WeaponNameHeight;
+    context.fillStyle = "#eeeeee88";
+    context.fillRect(x, y, UI_weaponPicBox_width, UI_WeaponNameHeight);
+    context.font = UI_WeaponNameHeight + "px Arial";
+    text = this.player.equipment.club.name;
+    textWidth = context.measureText(text).width;
+    center_x = x + UI_weaponPicBox_width / 2;
+    center_y = y + UI_WeaponNameHeight / 2;
+    context.fillStyle = "#222";
+    context.fillText(text,
+        center_x - textWidth / 2,
+        center_y + UI_WeaponNameHeight / 2);
 
 }
 
