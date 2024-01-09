@@ -298,7 +298,7 @@ Game.prototype.keyup = function(e) {
             _this.key.key_k = false;
             break;
         case 82: //r
-            _this.key.reload = true;
+            _this.key.reload = false;
             break;
         default:
     }
@@ -856,6 +856,33 @@ Game.prototype.drawUI = function(context) {
     x -= UI_margin_x + ammoBoxWidth;
     context.fillRect(x, y, ammoBoxWidth, ammoBoxHeight);
 
+    if (this.player.equipment.club.state != "reloading") {
+        // 画出子弹数量
+        let ammo = this.player.equipment.club.ammo;
+        let ammo_max = this.player.equipment.club.ammo_max;
+        let ammoWidth = ammoBoxWidth - overblood * 2;
+        let ammoHeight = (ammoBoxHeight - overblood * 2) / ammo_max * 4 / 5;
+        let ammoMargin = ammoHeight / 4;
+        x += overblood;
+        y += ammoBoxHeight - overblood;
+        context.fillStyle = "ghostwhite";
+        for (let i = 0; i < ammo; i++) {
+            y -= ammoHeight;
+            context.fillRect(x, y, ammoWidth, ammoHeight);
+            y -= ammoMargin;
+        }
+    } else {
+        // 用绿色画出reload时间的比例
+        let time = this.player.equipment.club.time;
+        let startReload = this.player.equipment.club.startReload;
+        let reload = this.player.equipment.club.reload;
+        let reloadWidth = ammoBoxWidth - overblood * 2;
+        let reloadHeight = (ammoBoxHeight - overblood * 2) * (time - startReload) / reload;
+        x += overblood;
+        y += ammoBoxHeight - overblood - reloadHeight;
+        context.fillStyle = "#73ca73";
+        context.fillRect(x, y, reloadWidth, reloadHeight);
+    }
 
 }
 

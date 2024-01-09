@@ -167,11 +167,12 @@ class Spade {
         this.info = _info;
         this.id = this.id_iterator++;
 
-        this.ammo_max = 10;
-        this.ammo = 10;
+        this.ammo_max = 5;
+        this.ammo = 5;
         this.delay = 300;
-        this.reload = 1000;
+        this.reload = 3000;
 
+        this.time = new Date().getTime();
         this.lastfire = 0;
         this.state = "ready"; // ready, firing, reloading
         this.startReload = 0;
@@ -189,8 +190,9 @@ class Spade {
     id_iterator = 0;
 
     update() {
+        this.time = new Date().getTime();
         if (this.state == "reloading") {
-            if (new Date().getTime() - this.startReload >= this.reload) {
+            if (this.time - this.startReload >= this.reload) {
                 this.ammo = this.ammo_max;
                 this.state = "ready";
             }
@@ -974,7 +976,7 @@ class GAME {
             if (club && club.ammo < club.ammo_max && club.state != "reloading") {
                 // 开始reload
                 club.state = "reloading";
-                club.startReload = player.time;
+                club.startReload = club.time;
             }
         }
 
