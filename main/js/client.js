@@ -4,6 +4,7 @@ const h6_3 = document.getElementById("h6_3");
 
 const BGColor = '#333';
 const nameMaxLength = 15;
+const TRACER_LINE_WIDTH = 4;
 const HPBarColor = '#ff5555aa';
 const HPBarWidth = 30;
 const HPBarHeight = 4;
@@ -658,10 +659,10 @@ Game.prototype.draw_player_action = function(context) {
         // 画出玩家和光标的连线, 虚线
         context.beginPath();
         context.strokeStyle = "white";
-        context.lineWidth = 4;
+        context.lineWidth = TRACER_LINE_WIDTH;
         // 表示玩家和光标的canvas坐标
-        let p_X = _this.player.loc.x + _this.tile_size / 2 - _this.camera.x;
-        let p_Y = _this.player.loc.y + _this.tile_size / 2 - _this.camera.y;
+        let p_X = _this.player.loc.x - _this.camera.x;
+        let p_Y = _this.player.loc.y - _this.camera.y;
         let c_X = _this.mouse.x;
         let c_Y = _this.mouse.y;
         let len = Math.sqrt(
@@ -776,6 +777,9 @@ Game.prototype.drawUI = function(context) {
     context.strokeText(text,
         center_x - textWidth / 2,
         center_y + player_info_fontSize / 2);
+
+    // 绘制武器
+
 
 }
 
