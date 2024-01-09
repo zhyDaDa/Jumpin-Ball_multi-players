@@ -30,6 +30,9 @@ const _enumConstants = [
     "SHAPE_CIRCLE",
     "SHAPE_RECT",
     "SHAPE_TRIANGLE",
+    "ITEM_TYPE_SPADE", "ITEM_TYPE_CLUB", "ITEM_TYPE_HEART", "ITEM_TYPE_DIAMOND", "ITEM_TYPE_POTION",
+    "ITEM_CLASS_WHITE", "ITEM_CLASS_BLACK",
+
 ];
 const enums = createConstants(..._enumConstants);
 
@@ -69,22 +72,24 @@ class Bullet {
      * @param {Player} player 发出者的player对象
      */
     constructor(player) {
+        let bullet_state = player.chara.equipment.club.bullet_state;
         this.current_mapId = player.chara.current_mapId;
         this.loc = deepCopy(player.chara.loc);
         this.vel = deepCopy(player.chara.vel);
-        this.speed = 10;
+        this.speed = bullet_state.speed || 10;
         // this.acc = { x: 0, y: 0 };
         this.owner_ip = player.chara.ip;
 
         this.begin_point = deepCopy(this.loc);
         this.end_point = deepCopy(player.chara.aimer);
 
-        this.damage_direct = 0;
-        this.damage_slice = 0;
-        this.damage_continuous = 0;
-        this.damage_explosion = 0;
+        this.damage_direct = bullet_state.damage_direct || 0;
+        this.damage_slice = bullet_state.damage_slice || 0;
+        this.damage_continuous = bullet_state.damage_continuous || 0;
+        this.damage_explosion = bullet_state.damage_explosion || 0;
 
-        this.type = enums.BULLET_TYPE_NORMAL; // BULLET_TYPE_NORMAL, BULLET_TYPE_EXPLOSIVE, BULLET_TYPE_LASER
+        // type控制的是样式, 子弹的数值由枪来确定
+        this.type = bullet_state.type; // BULLET_TYPE_NORMAL, BULLET_TYPE_EXPLOSIVE, BULLET_TYPE_LASER
         this.class = 0; // BULLET_CLASS_WHITE, BULLET_CLASS_BLACK
 
         // 特殊效果
@@ -112,8 +117,8 @@ class Bullet {
                 let dx = this.end_point.x - this.begin_point.x;
                 let dy = this.end_point.y - this.begin_point.y;
                 let d = Math.sqrt(dx * dx + dy * dy);
-                this.vel.x = this.speed * dx / d;
-                this.vel.y = this.speed * dy / d;
+                this.vel.x += this.speed * dx / d;
+                this.vel.y += this.speed * dy / d;
                 break;
         }
     }
@@ -133,6 +138,46 @@ class Bullet {
                 break;
         }
     }
+}
+
+/** 
+ * @class Item
+ * @property {number} id
+ * @property {string} name
+ * @property {string} pic_src
+ * @property {number} type
+ * @property {number} class
+ * @property {number} tier
+ * @property {number} price
+ * @property {string} colour
+ * @property {string} info
+ * with spade
+ * @property {{type: number, speed: number, damage_direct: number, damage_slice: number, damage_continuous: number, damage_explosion: number}} bullet_state
+ */
+class Item {
+    constructor(_name = "default Item", _pic_src = "", _type = 0, _class = 0, _tier = 0, _price = 0, _colour = "#000", _info = "物品说明") {
+        this.name = _name;
+        this.pic_src = _pic_src;
+        this.type = _type; // ITEM_TYPE_SPADE, ITEM_TYPE_CLUB, ITEM_TYPE_HEART, ITEM_TYPE_DIAMOND
+        this.class = _class; // ITEM_CLASS_WHITE, ITEM_CLASS_BLACK
+        this.tier = _tier;
+        this.price = _price;
+
+        this.colour = _colour;
+        this.info = _info;
+        this.id = this.id_iterator++;
+
+        this.bullet_state = {
+            type: enums.BULLET_TYPE_NORMAL,
+            speed: 12,
+            damage_direct: 1,
+            damage_slice: 0,
+            damage_continuous: 0,
+            damage_explosion: 0,
+        }
+    }
+
+    id_iterator = 0;
 }
 
 /**
@@ -159,6 +204,8 @@ class Bullet {
  * @property {Boolean} glide_ability
  * @property {Boolean} dash_ability
  * @property {Boolean} float_ability
+ * with equipment
+ * @property {{club: Item, heart: Item, spade: Item, diamond: Item}} equipment
  * with state
  * @property {{hp: Number, mp: Number, hp_max: Number, mp_max: Number, money: Number, condtion: String, timer_begin: Number, timer_current: Number, timer_end: Number, reviveCooldown: Number}} state
  */
@@ -214,7 +261,7 @@ class Chara {
 
         this.buff = [{}];
         this.equipment = {
-            club: {},
+            club: new Item(),
             heart: {},
             spade: {},
             diamond: {},
