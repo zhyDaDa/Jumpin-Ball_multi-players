@@ -429,7 +429,7 @@ wss.on('connection', function(ws) {
         playerDic[ip].key = deepCopy(data.key);
         if (data.name)
             playerDic[ip].chara.name = data.name;
-        if (data.colour)
+        if (data.color)
             playerDic[ip].chara.colour = data.color;
     });
 

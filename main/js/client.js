@@ -40,7 +40,7 @@ function setServer(serverAddress) {
         console.log("成功连接到服务器");
         // alert("成功连接到服务器");
         document.querySelector("#h6_3").innerHTML = `<font color="green"> 成功连接到服务器 </font>`;
-        // 取消鼠标显示
+        tellServer();
     };
     /* div: 接收消息 */
     socket.onmessage = function(e) {
@@ -929,12 +929,14 @@ Game.prototype.draw = function(context, map_id, players, items, bullets) {
 
 function setSkinColor(color) {
     playerColour = color;
+    localStorage.setItem("playerColour", color);
     tellServer();
 }
 
 function setPlayerName(name) {
     // 截取前nameMaxLength个字符
     playerName = name.substr(0, nameMaxLength);
+    localStorage.setItem("playerName", playerName);
     tellServer();
 }
 
@@ -958,8 +960,8 @@ function setViewZoom(zoomIndex) {
 setViewZoom(zoomIndex);
 
 const tipBoard = document.getElementById("tipBoard");
-let playerColour = "";
-let playerName = "";
+let playerColour = "" || localStorage.getItem("playerColour");
+let playerName = "" || localStorage.getItem("playerName");
 let trapClock = 0;
 
 game.pauseFlag = false;

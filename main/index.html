@@ -16,7 +16,7 @@
             <p id="renderDelay">渲染延迟: <span class="renderDelay"></span>ms</p>
             <p id="fps">FPS: <span class="fps"></span></p>
         </div>
-        <div id="tipBoard" style="display: block;">
+        <div id="tipBoard" style="display: none;">
             <h6 id="h6_1">
                 <form action="javascript:void(0);" id="addressForm">
                     <input type="text" name="joinServerIP" id="joinServerIP" placeholder="输入服务器地址" />
@@ -32,7 +32,7 @@
             <hr style="margin:1rem 0;">
             <h6 id="h6_5">输入皮肤颜色: &nbsp;
                 <form action="javascript:void(0);" id="setSkinColor">
-                    <input type="text" name="skinColor" id="skinColor" placeholder="带#的十六进制或英文" />
+                    <input type="text" name="setSkinColor" id="setSkinColor" placeholder="带#的十六进制或英文" />
                     <input type="submit" value="设置" />
                 </form>
             </h6>
@@ -96,7 +96,7 @@
             });
             $('#setSkinColor').on('submit', function(e) {
                 e.preventDefault();
-                let data = document.querySelector('#setSkinColor').skinColor.value;
+                let data = document.querySelector('#setSkinColor').setSkinColor.value;
                 setSkinColor(data);
             });
             $('#setPlayerName').on('submit', function(e) {
