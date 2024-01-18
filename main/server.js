@@ -1,6 +1,7 @@
 console.log('Server.js 开始运行');
 
-
+const defaultPlayerSize = 16; // 玩家的默认尺寸
+const defaultHitBoxSize = 10; // 玩家的默认碰撞箱尺寸
 const FALLEN_DAMAGE = 10; // 坠落伤害
 const VEL_STILL = 0.05; // 停止速度
 /**
@@ -37,7 +38,7 @@ const _enumConstants = [
 const enums = createConstants(..._enumConstants);
 
 
-const { time } = require('console');
+const { time, debug } = require('console');
 const fs = require('fs');
 const WebSocketServer = require('ws').Server;
 // const tween = require('tween.js');
@@ -60,6 +61,7 @@ const WebSocketServer = require('ws').Server;
  * @property {number} damage_explosion
  * @property {number} timer
  * @property {number} effect
+ * @property {{* : Boolean}} attribute
  * with info
  * @property {number} type
  * @property {number} class
@@ -77,6 +79,9 @@ class Bullet {
         this.current_mapId = player.chara.current_mapId;
         this.loc = deepCopy(player.chara.loc);
         this.vel = deepCopy(player.chara.vel);
+        // 玩家初始速度对子弹的影响要稍微小一点
+        this.vel.x /= 4;
+        this.vel.y /= 4;
         this.speed = bullet_state.speed || 10;
         // this.acc = { x: 0, y: 0 };
         this.owner_ip = player.chara.ip;
@@ -92,6 +97,10 @@ class Bullet {
         // type控制的是样式, 子弹的数值由枪来确定
         this.type = bullet_state.type; // BULLET_TYPE_NORMAL, BULLET_TYPE_EXPLOSIVE, BULLET_TYPE_LASER
         this.class = 0; // BULLET_CLASS_WHITE, BULLET_CLASS_BLACK
+
+        this.attribute = {
+            pierce: false, // 穿透
+        }
 
         // 特殊效果
         this.timer = 0;
@@ -139,6 +148,17 @@ class Bullet {
                 break;
         }
     }
+
+    /**
+     * 删除子弹
+     */
+    delete() {
+        // 销毁子弹
+        bulletDic[this.current_mapId].splice(bulletDic[this.current_mapId].indexOf(this), 1);
+        // 释放内存
+        delete this;
+        // this = undefined;
+    }
 }
 
 /** 
@@ -168,8 +188,8 @@ class Spade {
         this.info = _info;
         this.id = this.id_iterator++;
 
-        this.ammo_max = 5;
-        this.ammo = 5;
+        this.ammo_max = 20;
+        this.ammo = this.ammo_max;
         this.delay = 300;
         this.reload = 1000;
 
@@ -264,7 +284,9 @@ class Chara {
         };
 
         this.name = "defaultPlayer";
-        this.colour = '#000';
+        this.colour = "#FF9900";
+        this.size = defaultPlayerSize;
+        this.hitBoxSize = defaultHitBoxSize;
         this.current_mapId = 0;
 
         this.can_jump = true;
@@ -342,9 +364,12 @@ class Player {
 }
 
 /**
+ * @typedef {Object} playerDic
+ * @property {Player} value - 值
+ */
+/**
  * 字典: 索引是ip -> 值为Player对象
- * @type {Object}
- * @member {Player} playerDic[ip]
+ * @type {playerDic}
  */
 const playerDic = {};
 /**
@@ -377,10 +402,10 @@ wss.on('connection', function(ws) {
     playerDic[ip].ws = ws;
     playerDic[ip].chara.ip = ip;
 
-    playerDic[ip].name = ip + "";
+    playerDic[ip].chara.name = ip + "";
     playerDic[ip].chara.loc.x = game.maps[playerDic[ip].chara.current_mapId].player.x;
     playerDic[ip].chara.loc.y = game.maps[playerDic[ip].chara.current_mapId].player.y;
-    playerDic[ip].chara.colour = game.maps[playerDic[ip].chara.current_mapId].player.colour;
+    playerDic[ip].chara.colour = "#FF9900";
 
     // 为其设置监听
     ws.on('message', function(message) {
@@ -391,8 +416,10 @@ wss.on('connection', function(ws) {
         data = JSON.parse(message);
         // 更新玩家字典中的数据
         playerDic[ip].key = deepCopy(data.key);
-        playerDic[ip].chara.name = data.name;
-        playerDic[ip].chara.colour = data.color;
+        if (data.name)
+            playerDic[ip].chara.name = data.name;
+        if (data.colour)
+            playerDic[ip].chara.colour = data.color;
     });
 
     // 链接关闭
@@ -456,7 +483,7 @@ const deepCopy = function(source, kaiguan) {
 }
 
 
-
+/* div: 主游戏对象 */
 class GAME {
     constructor() {
         this.alert_errors = false;
@@ -630,15 +657,20 @@ class GAME {
      * @param {Player} player 玩家
      */
     move_player = function(player) {
-
         if (player.chara.state.condtion != "normal") {
+            player.chara.state.timer_current = new Date().getTime();
             switch (player.chara.state.condtion) {
                 case "fallen":
                     if (player.chara.state.timer_current > player.chara.state.timer_end) {
                         player.chara.state.condtion = "normal";
                         this.teleport_player_to_savePoint(player);
-                    } else {
-                        player.chara.state.timer_current = new Date().getTime();
+                    }
+                    break;
+                case "dead":
+                    if (player.chara.state.timer_current > player.chara.state.timer_end) {
+                        player.chara.state.condtion = "normal";
+                        player.chara.state.hp = player.chara.state.hp_max;
+                        this.teleport_player_to_savePoint(player);
                     }
                     break;
                 default:
@@ -647,6 +679,14 @@ class GAME {
             return;
         }
 
+        if (player.chara.state.hp <= 0) {
+            player.chara.state.hp = 0;
+            player.chara.state.condtion = "dead";
+            player.chara.state.timer_end = this.maps[player.chara.current_mapId].reviveCooldown + new Date().getTime();
+            player.chara.state.timer_begin = new Date().getTime();
+            player.chara.state.timer_current = new Date().getTime();
+            return;
+        }
 
         let _this = (this);
 
@@ -997,24 +1037,44 @@ class GAME {
         let current_map = _this.maps[bullet.current_mapId];
         bullet.update(current_map.gravity);
         if (this.collisionCheck(bullet) || this.fallenCheck(bullet)) {
-            // 删除子弹, 释放内存
-            bulletDic[bullet.current_mapId].splice(bulletDic[bullet.current_mapId].indexOf(bullet), 1);
-            bullet = null;
+            bullet.delete();
         }
+        // 伤害计算
+        // 对于玩家的伤害
+        Object.values(playerDic).map(player => {
+            if (player.chara.current_mapId != bullet.current_mapId) return;
+            if (bullet.owner_ip == player.chara.ip) return;
+            let dist = Math.sqrt((player.chara.loc.x - bullet.loc.x) ** 2 + (player.chara.loc.y - bullet.loc.y) ** 2);
+            if (dist < player.chara.hitBoxSize / 2 + bullet.size / 2) {
+                // 玩家受伤
+                switch (bullet.type) {
+                    case enums.BULLET_TYPE_NORMAL:
+                        if (bullet.attribute.pierce) {
+                            player.chara.state.hp -= bullet.damage_slice;
+                        } else {
+                            player.chara.state.hp -= bullet.damage_direct;
+                            bullet.delete();
+                        }
+                        break;
+                    default:
+                        player.chara.state.hp -= bullet.damage_direct;
+                        bullet.delete();
+                }
+            }
+        });
+
         // todo: 展望: 对于特殊子弹, 需要判断撞墙是否弹跳等...
     }
 
     update = function() {
-        for (let player in playerDic) {
-            game.update_player(playerDic[player]);
-        }
-        let count = 0;
         bulletDic.forEach((bulletListInMap, mapId) => {
             bulletListInMap.forEach(bullet => {
                 this.move_bullet(bullet);
-                count++;
             });
         });
+        for (let player in playerDic) {
+            game.update_player(playerDic[player]);
+        }
     }
 
     broadcast = function() {
