@@ -37,6 +37,7 @@ const _enumConstants = [
 const enums = createConstants(..._enumConstants);
 
 
+const { time } = require('console');
 const fs = require('fs');
 const WebSocketServer = require('ws').Server;
 // const tween = require('tween.js');
@@ -170,7 +171,7 @@ class Spade {
         this.ammo_max = 5;
         this.ammo = 5;
         this.delay = 300;
-        this.reload = 3000;
+        this.reload = 1000;
 
         this.time = new Date().getTime();
         this.lastfire = 0;
@@ -311,7 +312,9 @@ class Chara {
  * @property {Chara} chara
  * @property {WebSocket} ws
  * @property {Boolean} isRobo
- * @property {{left: Boolean, right: Boolean, up: Boolean, down: Boolean, space: Boolean, key_j: Boolean, key_k: Boolean, mouse_l: Boolean, mouse_m: Boolean, mouse_r: Boolean}} key
+ * @property {{*:Boolean}} key
+ * @property {number} time 该玩家所有的时间计算基准
+ * @property {number} latency 玩家的网络延迟(来回)
  */
 class Player {
     constructor() {
@@ -334,6 +337,7 @@ class Player {
         this.ws = undefined;
         this.isRobo = false;
         this.time = 0;
+        this.latency = 0;
     }
 }
 
@@ -1069,6 +1073,15 @@ robo.chara.current_mapId = 0;
 robo.chara.loc.x = game.maps[robo.chara.current_mapId].player.x;
 robo.chara.loc.y = game.maps[robo.chara.current_mapId].player.y;
 
+let robo2 = new Player();
+robo2.isRobo = true;
+playerDic["robo2"] = robo2;
+robo2.chara.name = "robo2";
+robo2.chara.colour = '#222';
+robo2.chara.current_mapId = 1;
+robo2.chara.loc.x = game.maps[robo2.chara.current_mapId].player.x;
+robo2.chara.loc.y = game.maps[robo2.chara.current_mapId].player.y;
+
 setInterval(() => {
     game.update();
     game.broadcast();
@@ -1079,7 +1092,20 @@ const wss_file = new WebSocketServer({
     port: 4320
 });
 
+let timeCheckInterval = 1000;
+let timeCheckBufferSize = 12;
+
 wss_file.on('connection', function(ws) {
+    ws.timeCheckInterval = setInterval(() => {
+        ws.send(JSON.stringify({
+            type: "time",
+            data: {
+                time: new Date().getTime(),
+                latency: playerDic[ws._socket.remoteAddress].latency
+            }
+        }));
+    }, timeCheckInterval);
+    ws.timeCheckBuffer = new Array(12).fill(0);
     console.log(`file client ${ws._socket.remoteAddress} connected`);
     ws.on('message', function(message) {
         let obj = JSON.parse(message);
@@ -1105,11 +1131,19 @@ wss_file.on('connection', function(ws) {
                     }
                 }));
                 break;
+            case "time":
+                let delta = new Date().getTime() - obj.time;
+                ws.timeCheckBuffer[Math.trunc(obj.time / timeCheckInterval) % timeCheckBufferSize] = delta;
+                // 更新latency
+                playerDic[ws._socket.remoteAddress].latency = ws.timeCheckBuffer.reduce((a, b) => a + b) / timeCheckBufferSize;
+                break;
             default:
                 break;
         }
     })
     ws.on('close', function() {
         console.log(`file client ${ws._socket.remoteAddress} disconnected`);
+        clearInterval(ws.timeCheckInterval);
     })
+
 })

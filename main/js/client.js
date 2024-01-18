@@ -14,6 +14,7 @@ const UI_MPBarColor_front = '#19699f';
 let zoomIndex = 1.2;
 const player_info_fontSize = 12;
 const cursor_size = 20;
+const fpsBufferSize = 24;
 
 /**
  * 存放物品图片
@@ -47,7 +48,7 @@ function setServer(serverAddress) {
         // console.log(data);
         // 计算延迟
         let receiveTime = Date.now();
-        let latency = receiveTime - data.time;
+        // let latency = receiveTime - data.time;
         /*  let data = {
                 map_id: 0,
                 players: [],
@@ -64,11 +65,11 @@ function setServer(serverAddress) {
 
         // 更新延迟显示
         let renderLatency = Date.now() - receiveTime;
-        document.querySelectorAll(".serverDelay").forEach(el => el.innerText = latency);
+        // document.querySelectorAll(".serverDelay").forEach(el => el.innerText = latency);
         document.querySelectorAll(".renderDelay").forEach(el => el.innerText = renderLatency);
 
         // 计算fps
-        if (fpsBuffer[1] < 24) {
+        if (fpsBuffer[1] < fpsBufferSize) {
             fpsBuffer[1]++;
         } else {
             let fps = Math.round(fpsBuffer[1] / (new Date().getTime() - fpsBuffer[0]) * 1000);
@@ -95,6 +96,13 @@ function setServer(serverAddress) {
                 break;
             case "item_pic":
                 picDic[obj.data.pic_src] = obj.data.src;
+                break;
+            case "time":
+                socket_file.send(JSON.stringify({
+                    type: "time",
+                    time: obj.data.time
+                }));
+                document.querySelectorAll(".serverDelay").forEach(el => el.innerText = Number(obj.data.latency).toFixed(2));
                 break;
             default:
                 break;
