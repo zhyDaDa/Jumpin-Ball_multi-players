@@ -64,8 +64,7 @@
 
         "player": {
             "x": 17,
-            "y": 9,
-            "colour": "#999"
+            "y": 9
         },
 
         "reviveCooldown": 3000
@@ -135,8 +134,7 @@
 
         "player": {
             "x": 17,
-            "y": 9,
-            "colour": "#999"
+            "y": 9
         },
 
         "reviveCooldown": 3000

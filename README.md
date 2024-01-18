@@ -23,6 +23,8 @@
  + [x] 各个玩家的死亡判定, 死亡计次的现实, 玩家退出的时候服务器删除ta的存在
  + [X] 客户端玩家面板的完善(死亡计次, 当前数值, 武器, 技能, 效果*buff*)
  + [x] 战斗的方式(子弹, 近战)
+ + [x] 伤害计算
+ + [x] 延迟计算
  + [x] 玩家名称, 血条头顶显示
  + [x] 光圈标记或是移动时的特效等的实现
  + [x] 玩家的死亡动画以及复活方式(死亡后的倒计时)
@@ -154,6 +156,10 @@ bullet = {
 
   type: ENUM, // BULLET_TYPE_NORMAL, BULLET_TYPE_EXPLOSIVE, BULLET_TYPE_LASER
   class: ENUM, // BULLET_CLASS_WHITE, BULLET_CLASS_BLACK
+
+  this.attribute = {
+      pierce: false, // 穿透
+  }
 
   // 特殊效果
   timer: 0,

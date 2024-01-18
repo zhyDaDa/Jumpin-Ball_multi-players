@@ -116,8 +116,8 @@ function tellServer() {
     game.key.mouseY = game.mouse.y + game.camera.y;
     let message = JSON.stringify({
         key: game.key,
-        color: playerColour || '#FF9900',
-        name: playerName || "player_A",
+        color: playerColour,
+        name: playerName,
     });
     console.log(`发送给服务器: ${message}`);
     socket.send(message);
@@ -165,7 +165,8 @@ var Game = function() {
     this.mouse = { x: 0, y: 0 };
 
     this.player = {
-        colour: "#111",
+        name: undefined,
+        colour: undefined,
 
         loc: {
             x: 0,
@@ -480,7 +481,7 @@ Game.prototype.draw_player = function(context, player) {
     let span = player_info_fontSize * nameMaxLength / 2; // 显示名字的矩形的宽度
 
     // 绘制圆球本体
-    context.fillStyle = player.colour || "oranges";
+    context.fillStyle = player.colour;
     context.beginPath();
     context.arc(
         player.loc.x - this.camera.x,
@@ -495,7 +496,7 @@ Game.prototype.draw_player = function(context, player) {
 
     // 绘制特效
     // 静态特效_特殊状态
-    if (player.state.condtion == "fallen") {
+    if (player.state.condtion == "fallen" || player.state.condtion == "dead") {
         // 在其周围绘制虚线圆
         context.beginPath();
         context.strokeStyle = "white";
@@ -957,8 +958,8 @@ function setViewZoom(zoomIndex) {
 setViewZoom(zoomIndex);
 
 const tipBoard = document.getElementById("tipBoard");
-let playerColour = '#FF9900';
-let playerName = "player_A";
+let playerColour = "";
+let playerName = "";
 let trapClock = 0;
 
 game.pauseFlag = false;
