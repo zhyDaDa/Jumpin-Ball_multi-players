@@ -405,7 +405,18 @@ wss.on('connection', function(ws) {
     playerDic[ip].chara.name = ip + "";
     playerDic[ip].chara.loc.x = game.maps[playerDic[ip].chara.current_mapId].player.x;
     playerDic[ip].chara.loc.y = game.maps[playerDic[ip].chara.current_mapId].player.y;
-    playerDic[ip].chara.colour = "#FF9900";
+
+    (function() {
+        // 根据ip生成一个hash值, 然后根据hash值生成一个随机的颜色
+        let hash = 0;
+        for (let i = 0; i < ip.length; i++) {
+            hash = ip.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        let colour = '#';
+        // hash值模FFFFFF, 然后转换成16进制
+        colour += ('000000' + (hash % 0xFFFFFF).toString(16)).slice(-6);
+        playerDic[ip].chara.colour = colour;
+    })();
 
     // 为其设置监听
     ws.on('message', function(message) {
