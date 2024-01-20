@@ -348,8 +348,8 @@ class Player {
             up: false,
             down: false,
             space: false,
-            key_j: false,
-            key_k: false,
+            dash: false,
+            pick: false,
             reload: false,
             mouse_l: false,
             mouse_m: false,
@@ -814,7 +814,7 @@ class GAME {
 
         /* float技能处理 */
         // TODO: 还有一些问题, 有空再处理
-        if (player.chara.float_ability && player.chara.can_float && player.key.key_k == true) {
+        if (player.chara.float_ability && player.chara.can_float && player.key.pick == true) {
             for (let p = -3; p < 3; p++) {
                 for (let q = -2; q < 4; q++) {
                     let localTile = get_tile(t_x_left + q, t_y_up + p);
@@ -994,11 +994,11 @@ class GAME {
         } else {
             player.chara.gliding = false;
         }
-        if (player.key.key_j && player.chara.dash_ability && player.chara.can_dash) {
+        if (player.key.dash && player.chara.dash_ability && player.chara.can_dash) {
             player.chara.can_dash = false;
             player.dash_switch = 5;
         }
-        if (player.key.key_k && player.chara.float_ability && player.chara.can_float) {
+        if (player.key.pick && player.chara.float_ability && player.chara.can_float) {
             player.chara.can_float = false;
         }
 

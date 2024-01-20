@@ -152,8 +152,8 @@ var Game = function() {
         up: false,
         down: false,
         space: false,
-        key_j: false,
-        key_k: false,
+        dash: false,
+        pick: false,
         reload: false,
         mouse_l: false,
         mouse_m: false,
@@ -244,17 +244,18 @@ Game.prototype.keydown = function(e) {
         case 40:
             _this.key.down = true;
             break;
+        case 83: //s
+            _this.key.down = true;
+            break;
         case 32: //space
             _this.key.space = true;
             break;
-        case 83:
-            _this.key.down = true;
-            break;
         case 74: //j
-            _this.key.key_j = true;
+        case 16: //shift
+            _this.key.dash = true;
             break;
-        case 75: //k
-            _this.key.key_k = true;
+        case 69: //e
+            _this.key.pick = true;
             break;
         case 82: //r
             _this.key.reload = true;
@@ -301,10 +302,11 @@ Game.prototype.keyup = function(e) {
             _this.key.space = false;
             break;
         case 74: //j
-            _this.key.key_j = false;
+        case 16: //shift
+            _this.key.dash = false;
             break;
-        case 75: //k
-            _this.key.key_k = false;
+        case 69: //e
+            _this.key.pick = false;
             break;
         case 82: //r
             _this.key.reload = false;
