@@ -78,6 +78,8 @@ class Bullet {
         let bullet_state = player.chara.equipment.club.bullet_state;
         this.current_mapId = player.chara.current_mapId;
         this.loc = deepCopy(player.chara.loc);
+        // 优化射击体验, 子弹应该在玩家上方一点点的位置射出
+        this.loc.y -= player.chara.size / 4;
         this.vel = deepCopy(player.chara.vel);
         // 玩家初始速度对子弹的影响要稍微小一点
         this.vel.x /= 4;
