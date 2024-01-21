@@ -13,6 +13,7 @@ const MAP_BOUNDARY_UNIT = { x: 30, y: 20 };
 
 /**
  * 常量ENUM生成器
+ * @return {Object.<string, number>}
  */
 const createConstants = (function() {
     let privateConstants = {};
@@ -31,9 +32,8 @@ const _enumConstants = [
     "SHAPE_CIRCLE",
     "SHAPE_RECT",
     "SHAPE_TRIANGLE",
-    "ITEM_TYPE_SPADE", "ITEM_TYPE_CLUB", "ITEM_TYPE_HEART", "ITEM_TYPE_DIAMOND", "ITEM_TYPE_POTION",
+    "ITEM_TYPE_SPADE", "ITEM_TYPE_CLUB", "ITEM_TYPE_HEART", "ITEM_TYPE_DIAMOND",
     "ITEM_CLASS_WHITE", "ITEM_CLASS_BLACK",
-
 ];
 const enums = createConstants(..._enumConstants);
 
@@ -163,9 +163,9 @@ class Bullet {
     }
 }
 
-/** 
- * @class Spade
- * @property {number} id
+/**
+ * @class Item
+ * @classdesc 物品类, 包括四种子类: spade, club, heart, diamond
  * @property {string} name
  * @property {string} pic_src
  * @property {number} type
@@ -174,12 +174,11 @@ class Bullet {
  * @property {number} price
  * @property {string} colour
  * @property {string} info
- * with spade
- * @property {{type: number, speed: number, damage_direct: number, damage_slice: number, damage_continuous: number, damage_explosion: number}} bullet_state
+ * @property {number} id
  */
-class Spade {
-    constructor(_name = "default spade", _pic_src = "default_src", _type = 0, _class = 0, _tier = 0, _price = 0, _colour = "#000", _info = "物品说明") {
-        this.name = _name;
+class Item {
+    constructor(_name, _pic_src, _type, _class, _tier, _price, _colour, _info) {
+        this.name = _name || "default item";
         this.pic_src = _pic_src || this.name;
         this.type = _type; // ITEM_TYPE_SPADE, ITEM_TYPE_CLUB, ITEM_TYPE_HEART, ITEM_TYPE_DIAMOND
         this.class = _class; // ITEM_CLASS_WHITE, ITEM_CLASS_BLACK
@@ -189,6 +188,31 @@ class Spade {
         this.colour = _colour;
         this.info = _info;
         this.id = this.id_iterator++;
+    }
+    id_iterator = 0;
+}
+
+/** 
+ * @class Spade
+ * @classdesc 武器类, 用于攻击
+ * @extends Item
+ * @inheritdoc
+ * with ammo
+ * @property {number} ammo_max
+ * @property {number} ammo
+ * @property {number} delay
+ * @property {number} reload
+ * with fire
+ * @property {number} time
+ * @property {number} lastfire
+ * @property {string} state - ready, firing, reloading
+ * @property {number} startReload
+ * with bullet
+ * @property {{type: number, speed: number, damage_direct: number, damage_slice: number, damage_continuous: number, damage_explosion: number}} bullet_state
+ */
+class Spade extends Item {
+    constructor(_name = "default spade", _pic_src = "default_src", _type = 0, _class = 0, _tier = 0, _price = 0, _colour = "#000", _info = "物品说明") {
+        super(_name, _pic_src, _type, _class, _tier, _price, _colour, _info);
 
         this.ammo_max = 20;
         this.ammo = this.ammo_max;
@@ -210,8 +234,9 @@ class Spade {
         }
     }
 
-    id_iterator = 0;
-
+    /**
+     * 更新武器状态
+     */
     update() {
         this.time = new Date().getTime();
         if (this.state == "reloading") {
@@ -382,7 +407,12 @@ const bulletDic = [];
 /**
  * @typedef {Object} itemDic
  * @property {Item} value - 值
-
+ */
+/**
+ * 字典: 索引是id -> 值为Item对象
+ * @type {itemDic}
+ */
+const itemDic = {};
 
 // div:初始化websocket
 // 以wifi的ip地址作为服务器的ip地址, port: 432 作为端口号
