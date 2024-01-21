@@ -198,6 +198,16 @@ class Item {
         this.state = enums.ITEM_STATE_WILD; // ITEM_STATE_WILD, ITEM_STATE_EQUIPPED, ITEM_STATE_SHOP
     }
     id_iterator = 0;
+
+    /**
+     * 更新物品的归属者
+     * @param {Chara} chara
+     */
+    updateBelonger(chara) {
+        this.belongerIp = chara.ip;
+        this.pos = deepCopy(chara.loc);
+        this.state = enums.ITEM_STATE_EQUIPPED;
+    }
 }
 
 /** 
@@ -375,7 +385,41 @@ class Chara {
         if (item.state == enums.ITEM_STATE_SHOP && this.state.money < item.price) return;
         else this.state.money -= item.price;
 
+        // 检查有无重合(type和class一致), 如果有则替换, 无则直接装备
+        let itemEquipped = null;
+        let itemClass = item.class - enums.ITEM_CLASS_WHITE;
+        switch (item.type) {
+            case enums.ITEM_TYPE_SPADE:
+                if (item.class == enums.ITEM_CLASS_WHITE && this.equipment.spade[0]) itemEquipped = this.equipment.spade[0];
+                else if (item.class == enums.ITEM_CLASS_BLACK && this.equipment.spade[1]) itemEquipped = this.equipment.spade[1];
+                else this.equipment.spade[itemClass] = item;
+                break;
+            case enums.ITEM_TYPE_CLUB:
+                if (item.class == enums.ITEM_CLASS_WHITE && this.equipment.club[0]) itemEquipped = this.equipment.club[0];
+                else if (item.class == enums.ITEM_CLASS_BLACK && this.equipment.club[1]) itemEquipped = this.equipment.club[1];
+                else this.equipment.club[itemClass] = item;
+                break;
+            case enums.ITEM_TYPE_HEART:
+                if (item.class == enums.ITEM_CLASS_WHITE && this.equipment.heart[0]) itemEquipped = this.equipment.heart[0];
+                else if (item.class == enums.ITEM_CLASS_BLACK && this.equipment.heart[1]) itemEquipped = this.equipment.heart[1];
+                else this.equipment.heart[itemClass] = item;
+                break;
+            case enums.ITEM_TYPE_DIAMOND:
+                if (item.class == enums.ITEM_CLASS_WHITE && this.equipment.diamond[0]) itemEquipped = this.equipment.diamond[0];
+                else if (item.class == enums.ITEM_CLASS_BLACK && this.equipment.diamond[1]) itemEquipped = this.equipment.diamond[1];
+                else this.equipment.diamond[itemClass] = item;
+                break;
+            default:
+                break;
+        }
 
+        // 如果有重合, 则将原有物品丢弃, 并更新其状态
+        if (itemEquipped) {
+            itemEquipped.belongerIp = "";
+            itemEquipped.pos = deepCopy(this.loc);
+            itemEquipped.state = enums.ITEM_STATE_WILD;
+        }
+        item.updateBelonger(this);
     }
 }
 
