@@ -829,9 +829,9 @@ Game.prototype.drawUI = function(context) {
     context.fillRect(x, y, UI_weaponPicBox_width, UI_weaponPicBox_height);
 
     // 绘制武器png
-    if (picDic[this.player.equipment.club.pic_src]) {
+    if (picDic[this.player.equipment.club[0].pic_src]) {
         let img = new Image();
-        img.src = picDic[this.player.equipment.club.pic_src];
+        img.src = picDic[this.player.equipment.club[0].pic_src];
         // 居中绘制
         let scale = Math.min((UI_weaponPicBox_width - overblood * 2) / img.width, (UI_weaponPicBox_height - overblood * 2) / img.height);
         let drawWidth = img.width * scale;
@@ -839,7 +839,7 @@ Game.prototype.drawUI = function(context) {
         context.drawImage(img, x + UI_weaponPicBox_width / 2 - drawWidth / 2, y + UI_weaponPicBox_height / 2 - drawHeight / 2, drawWidth, drawHeight);
     } else {
         // 请求图片
-        socket_file.send(JSON.stringify({ type: "item_pic", pic_src: this.player.equipment.club.pic_src }));
+        socket_file.send(JSON.stringify({ type: "item_pic", pic_src: this.player.equipment.club[0].pic_src }));
         // 绘制默认图片
         context.fillStyle = "black";
         context.fillRect(x + overblood, y + overblood, UI_weaponPicBox_width - overblood * 2, UI_weaponPicBox_height - overblood * 2);
@@ -851,7 +851,7 @@ Game.prototype.drawUI = function(context) {
     context.fillStyle = "#eeeeee88";
     context.fillRect(x, y, UI_weaponPicBox_width, UI_WeaponNameHeight);
     context.font = UI_WeaponNameHeight + "px Arial";
-    text = this.player.equipment.club.name;
+    text = this.player.equipment.club[0].name;
     textWidth = context.measureText(text).width;
     center_x = x + UI_weaponPicBox_width / 2;
     center_y = y + UI_WeaponNameHeight / 2;
@@ -867,10 +867,10 @@ Game.prototype.drawUI = function(context) {
     x -= UI_margin_x + ammoBoxWidth;
     context.fillRect(x, y, ammoBoxWidth, ammoBoxHeight);
 
-    if (this.player.equipment.club.state != "reloading") {
+    if (this.player.equipment.club[0].fireState != "reloading") {
         // 画出子弹数量
-        let ammo = this.player.equipment.club.ammo;
-        let ammo_max = this.player.equipment.club.ammo_max;
+        let ammo = this.player.equipment.club[0].ammo;
+        let ammo_max = this.player.equipment.club[0].ammo_max;
         let ammoWidth = ammoBoxWidth - overblood * 2;
         let ammoHeight = (ammoBoxHeight - overblood * 2) / ammo_max * 4 / 5;
         let ammoMargin = ammoHeight / 4;
@@ -884,9 +884,9 @@ Game.prototype.drawUI = function(context) {
         }
     } else {
         // 用绿色画出reload时间的比例
-        let time = this.player.equipment.club.time;
-        let startReload = this.player.equipment.club.startReload;
-        let reload = this.player.equipment.club.reload;
+        let time = this.player.equipment.club[0].time;
+        let startReload = this.player.equipment.club[0].startReload;
+        let reload = this.player.equipment.club[0].reload;
         let reloadWidth = ammoBoxWidth - overblood * 2;
         let reloadHeight = (ammoBoxHeight - overblood * 2) * (time - startReload) / reload;
         x += overblood;

@@ -34,6 +34,7 @@ const _enumConstants = [
     "SHAPE_TRIANGLE",
     "ITEM_TYPE_SPADE", "ITEM_TYPE_CLUB", "ITEM_TYPE_HEART", "ITEM_TYPE_DIAMOND",
     "ITEM_CLASS_WHITE", "ITEM_CLASS_BLACK",
+    "ITEM_STATE_WILD", "ITEM_STATE_EQUIPPED", "ITEM_STATE_SHOP",
 ];
 const enums = createConstants(..._enumConstants);
 
@@ -75,7 +76,7 @@ class Bullet {
      * @param {Player} player 发出者的player对象
      */
     constructor(player) {
-        let bullet_state = player.chara.equipment.club.bullet_state;
+        let bullet_state = player.chara.equipment.club[0].bullet_state;
         this.current_mapId = player.chara.current_mapId;
         this.loc = deepCopy(player.chara.loc);
         // 优化射击体验, 子弹应该在玩家上方一点点的位置射出
@@ -166,18 +167,22 @@ class Bullet {
 /**
  * @class Item
  * @classdesc 物品类, 包括四种子类: spade, club, heart, diamond
+ * with basic_attributes
  * @property {string} name
  * @property {string} pic_src
  * @property {number} type
  * @property {number} class
  * @property {number} tier
  * @property {number} price
+ * with info
  * @property {string} colour
  * @property {string} info
  * @property {number} id
+ * @property {string} belongerIp
+ * @property {{x: Number, y: Number}} pos
  */
 class Item {
-    constructor(_name, _pic_src, _type, _class, _tier, _price, _colour, _info) {
+    constructor(_name, _pic_src, _type, _class, _tier, _price, _colour, _info, _pos) {
         this.name = _name || "default item";
         this.pic_src = _pic_src || this.name;
         this.type = _type; // ITEM_TYPE_SPADE, ITEM_TYPE_CLUB, ITEM_TYPE_HEART, ITEM_TYPE_DIAMOND
@@ -188,6 +193,9 @@ class Item {
         this.colour = _colour;
         this.info = _info;
         this.id = this.id_iterator++;
+        this.belongerIp = "";
+        this.pos = deepCopy(_pos) || { x: 0, y: 0 };
+        this.state = enums.ITEM_STATE_WILD; // ITEM_STATE_WILD, ITEM_STATE_EQUIPPED, ITEM_STATE_SHOP
     }
     id_iterator = 0;
 }
@@ -205,7 +213,7 @@ class Item {
  * with fire
  * @property {number} time
  * @property {number} lastfire
- * @property {string} state - ready, firing, reloading
+ * @property {string} fireState - ready, firing, reloading
  * @property {number} startReload
  * with bullet
  * @property {{type: number, speed: number, damage_direct: number, damage_slice: number, damage_continuous: number, damage_explosion: number}} bullet_state
@@ -221,7 +229,7 @@ class Spade extends Item {
 
         this.time = new Date().getTime();
         this.lastfire = 0;
-        this.state = "ready"; // ready, firing, reloading
+        this.fireState = "ready"; // ready, firing, reloading
         this.startReload = 0;
 
         this.bullet_state = {
@@ -239,10 +247,10 @@ class Spade extends Item {
      */
     update() {
         this.time = new Date().getTime();
-        if (this.state == "reloading") {
+        if (this.fireState == "reloading") {
             if (this.time - this.startReload >= this.reload) {
                 this.ammo = this.ammo_max;
-                this.state = "ready";
+                this.fireState = "ready";
             }
         }
     }
@@ -331,10 +339,10 @@ class Chara {
 
         this.buff = [{}];
         this.equipment = {
-            club: new Spade(),
-            heart: {},
-            spade: {},
-            diamond: {},
+            club: [],
+            heart: [],
+            spade: [],
+            diamond: [],
         };
 
         this.state = {
@@ -351,8 +359,23 @@ class Chara {
         };
         this.ip = "";
 
-        this.equipment.club.name = "basic pistal";
-        this.equipment.club.pic_src = "basic pistal";
+        this.equipment.club[0] = new Spade();
+        this.equipment.club[0].name = "basic pistal";
+        this.equipment.club[0].pic_src = "basic pistal";
+    }
+
+    /**
+     * 角色拾取物品
+     * @param {Item} item
+     */
+    pickItem(item) {
+        // 如果物品已被拾取, 则不能再次拾取
+        if (item.state == enums.ITEM_STATE_EQUIPPED) return;
+        // 如果物品是商店物品且玩家钱不够则不拾取, 否则扣钱
+        if (item.state == enums.ITEM_STATE_SHOP && this.state.money < item.price) return;
+        else this.state.money -= item.price;
+
+
     }
 }
 
@@ -970,9 +993,9 @@ class GAME {
     }
 
     update_items = function(player) {
-        // 处理玩家的装备
+        // 处理玩家的装备 TODO: 改为对所有Item的处理
         let equipment = player.chara.equipment;
-        if (equipment.club) equipment.club.update();
+        if (equipment.club[0]) equipment.club[0].update();
     }
 
 
@@ -1041,7 +1064,7 @@ class GAME {
         // 攻击
         if (player.key.mouse_l) {
             // 射击
-            let club = player.chara.equipment.club;
+            let club = player.chara.equipment.club[0];
             if (club) {
                 // 1. 有子弹 2. 不在"reloading"状态 3. delay 之后
                 if (club.ammo < 1) {
@@ -1065,7 +1088,7 @@ class GAME {
             }
         }
         if (player.key.reload) {
-            let club = player.chara.equipment.club;
+            let club = player.chara.equipment.club[0];
             if (club && club.ammo < club.ammo_max && club.state != "reloading") {
                 // 开始reload
                 club.state = "reloading";
