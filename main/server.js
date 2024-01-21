@@ -379,6 +379,9 @@ const playerDic = {};
  * @type {Array<Array<Bullet>}
  */
 const bulletDic = [];
+/**
+ * @typedef {Object} itemDic
+ * @property {Item} value - 值
 
 
 // div:初始化websocket
@@ -670,6 +673,7 @@ class GAME {
      * @param {Player} player 玩家
      */
     move_player = function(player) {
+        /* div:异常状态判定 */
         if (player.chara.state.condtion != "normal") {
             player.chara.state.timer_current = new Date().getTime();
             switch (player.chara.state.condtion) {
@@ -701,6 +705,7 @@ class GAME {
             return;
         }
 
+        /* div:物理信息获取 */
         let _this = (this);
 
         // TODO: 是否需要提前将移动产生的加速度加到速度上
@@ -958,7 +963,7 @@ class GAME {
 
         // console.log(`player update\nposition: (${player.chara.loc.x},${player.chara.loc.y}); velocity: (${player.chara.vel.x},${player.chara.vel.y})`);
 
-        // 移动相关
+        /* 移动相关 */
 
         if (player.key.left) {
             // 玩家自身的速度限制优先于地图速度限制
@@ -1002,7 +1007,8 @@ class GAME {
             player.chara.can_float = false;
         }
 
-        // 行动相关
+        /* 行动相关 */
+        // 攻击
         if (player.key.mouse_l) {
             // 射击
             let club = player.chara.equipment.club;
@@ -1035,6 +1041,30 @@ class GAME {
                 club.state = "reloading";
                 club.startReload = club.time;
             }
+        }
+        // 拾取
+        if (player.key.pick) {
+            return; // TODO: 这里先不处理
+            // 检查当前位置是否有道具
+            let items = Object.values(itemDic[player.chara.current_mapId]);
+            items.forEach(item => {
+                if (item.isInRange(player.chara.loc.x, player.chara.loc.y)) {
+                    // 拾取道具
+                    // console.log(`玩家${player.chara.name}拾取了道具${item.name}`);
+                    if (player.chara.equipment[item.type]) {
+                        // 如果已经有同类型的道具, 则替换
+                        let oldItem = player.chara.equipment[item.type];
+                        // 将旧道具放到地上
+                        oldItem.loc.x = player.chara.loc.x;
+                        oldItem.loc.y = player.chara.loc.y;
+                        itemDic[player.chara.current_mapId].push(oldItem);
+                    }
+                    player.chara.equipment[item.type] = item;
+                    // 删除道具
+                    let index = items.indexOf(item);
+                    items.splice(index, 1);
+                }
+            });
         }
 
         this.move_player(player);
