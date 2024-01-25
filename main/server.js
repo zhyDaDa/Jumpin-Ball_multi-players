@@ -76,7 +76,7 @@ class Bullet {
      * @param {Player} player 发出者的player对象
      */
     constructor(player) {
-        let bullet_state = player.chara.equipment.club[0].bullet_state;
+        let bullet_state = player.chara.equipment.spade[0].bullet_state;
         this.current_mapId = player.chara.current_mapId;
         this.loc = deepCopy(player.chara.loc);
         // 优化射击体验, 子弹应该在玩家上方一点点的位置射出
@@ -369,9 +369,9 @@ class Chara {
         };
         this.ip = "";
 
-        this.equipment.club[0] = new Spade();
-        this.equipment.club[0].name = "basic pistal";
-        this.equipment.club[0].pic_src = "basic pistal";
+        this.equipment.spade[0] = new Spade();
+        this.equipment.spade[0].name = "basic pistal";
+        this.equipment.spade[0].pic_src = "basic pistal";
     }
 
     /**
@@ -1039,7 +1039,8 @@ class GAME {
     update_items = function(player) {
         // 处理玩家的装备 TODO: 改为对所有Item的处理
         let equipment = player.chara.equipment;
-        if (equipment.club[0]) equipment.club[0].update();
+        if (equipment.spade[0]) equipment.spade[0].update();
+        player.chara.equipment.spade[0].fireState
     }
 
 
@@ -1108,14 +1109,14 @@ class GAME {
         // 攻击
         if (player.key.mouse_l) {
             // 射击
-            let club = player.chara.equipment.club[0];
-            if (club) {
+            let spade = player.chara.equipment.spade[0];
+            if (spade) {
                 // 1. 有子弹 2. 不在"reloading"状态 3. delay 之后
-                if (club.ammo < 1) {
+                if (spade.ammo < 1) {
                     // 提醒玩家reload
-                } else if (club.state == "reloading") {
+                } else if (spade.fireState == "reloading") {
                     // 提醒玩家正在reload
-                } else if (player.time < club.lastfire + club.delay) {
+                } else if (player.time < spade.lastfire + spade.delay) {
                     // 提醒玩家需要等待
                 } else { // 能生成一颗子弹
                     let bullet = new Bullet(player);
@@ -1125,18 +1126,18 @@ class GAME {
                         bulletDic[player.chara.current_mapId] = [bullet];
                     }
 
-                    club.ammo--;
-                    club.lastfire = player.time;
-                    club.state = "firing";
+                    spade.ammo--;
+                    spade.lastfire = player.time;
+                    spade.fireState = "firing";
                 }
             }
         }
         if (player.key.reload) {
-            let club = player.chara.equipment.club[0];
-            if (club && club.ammo < club.ammo_max && club.state != "reloading") {
+            let spade = player.chara.equipment.spade[0];
+            if (spade && spade.ammo < spade.ammo_max && spade.fireState != "reloading") {
                 // 开始reload
-                club.state = "reloading";
-                club.startReload = club.time;
+                spade.fireState = "reloading";
+                spade.startReload = spade.time;
             }
         }
         // 拾取
@@ -1321,7 +1322,12 @@ wss_file.on('connection', function(ws) {
             case "item_pic":
                 // 根据obj.pic_src去images里找图片, 转换为base64
                 let pic_src = obj.pic_src;
-                let pic = fs.readFileSync(`main/images/${pic_src}.png`);
+                let pic = fs.readFileSync(`main/images/default_src.png`);
+                try {
+                    pic = fs.readFileSync(`main/images/${pic_src}.png`);
+                } catch (e) {
+                    console.warn(`File ${pic_src} not found, use default image`);
+                }
                 let src = "data:image/png;base64," + pic.toString("base64");
                 ws.send(JSON.stringify({
                     type: "item_pic",
