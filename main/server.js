@@ -1086,8 +1086,8 @@ class GAME {
     }
 
     update_items = function(player) {
-        for (let item of itemDic) {
-            update_item(item);
+        for (let item of Object.values(itemDic)) {
+            this.update_item(item);
         }
     }
 
@@ -1285,7 +1285,7 @@ class GAME {
             let map_id = map.mapId;
             dic[map_id] = {
                 players: allCharas.filter((player) => player.current_mapId == map_id),
-                items: allItems.filter((item) => item.mapId == map_id),
+                items: allItems.filter((item) => item.mapId == map_id && item.state != enums.ITEM_STATE_EQUIPPED),
                 bullets: bulletDic[map_id] || [],
             };
         });

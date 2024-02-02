@@ -474,6 +474,58 @@ Game.prototype.draw_map = function(context) {
 
 };
 
+Game.prototype.draw_items = function(context, items) {
+    for (let item of items) {
+        this.draw_item(context, item);
+    }
+}
+
+/**
+ * @typedef {Object} Item
+ * with basic_attributes
+ * @property {string} name
+ * @property {string} pic_src
+ * @property {number} type
+ * @property {number} class
+ * @property {number} tier
+ * @property {number} price
+ * with info
+ * @property {string} colour
+ * @property {string} info
+ * @property {number} id
+ * @property {string} belongerIp
+ * @property {number} state
+ * with position
+ * @property {number} mapId
+ * @property {{x: Number, y: Number}} pos
+ */
+
+/**
+ * @param {Item} item 
+ */
+Game.prototype.draw_item = function(context, item) {
+    let x = item.pos.x * this.tile_size - this.camera.x;
+    let y = item.pos.y * this.tile_size - this.camera.y;
+
+    let len = this.tile_size * 3 / 4;
+
+    if (picDic[item.pic_src]) {
+        let img = new Image();
+        img.src = picDic[item.pic_src];
+        // 居中绘制
+        let scale = Math.min((len) / img.width, (len) / img.height);
+        let drawWidth = img.width * scale;
+        let drawHeight = img.height * scale;
+        context.drawImage(img, x + this.tile_size / 2 - drawWidth / 2, y + this.tile_size / 2 - drawHeight / 2, drawWidth, drawHeight);
+    } else {
+        // 请求图片
+        socket_file.send(JSON.stringify({ type: "item_pic", pic_src: item.pic_src }));
+        // 绘制默认图片
+        context.fillStyle = "black";
+        context.fillRect(x, y, this.tile_size / 2, this.tile_size / 2);
+    }
+}
+
 Game.prototype.draw_all_players = function(context, players) {
     for (let player of players)
         this.draw_player(context, player);
@@ -829,72 +881,73 @@ Game.prototype.drawUI = function(context) {
     context.fillRect(x, y, UI_weaponPicBox_width, UI_weaponPicBox_height);
 
     // 绘制武器png
-    if (picDic[this.player.equipment.spade[0].pic_src]) {
-        let img = new Image();
-        img.src = picDic[this.player.equipment.spade[0].pic_src];
-        // 居中绘制
-        let scale = Math.min((UI_weaponPicBox_width - overblood * 2) / img.width, (UI_weaponPicBox_height - overblood * 2) / img.height);
-        let drawWidth = img.width * scale;
-        let drawHeight = img.height * scale;
-        context.drawImage(img, x + UI_weaponPicBox_width / 2 - drawWidth / 2, y + UI_weaponPicBox_height / 2 - drawHeight / 2, drawWidth, drawHeight);
-    } else {
-        // 请求图片
-        socket_file.send(JSON.stringify({ type: "item_pic", pic_src: this.player.equipment.spade[0].pic_src }));
-        // 绘制默认图片
-        context.fillStyle = "black";
-        context.fillRect(x + overblood, y + overblood, UI_weaponPicBox_width - overblood * 2, UI_weaponPicBox_height - overblood * 2);
-    }
-
-    // 在其上绘制武器名称
-    let UI_WeaponNameHeight = 2.4 * unit_y;
-    y -= UI_margin_y + UI_WeaponNameHeight;
-    context.fillStyle = "#eeeeee88";
-    context.fillRect(x, y, UI_weaponPicBox_width, UI_WeaponNameHeight);
-    context.font = UI_WeaponNameHeight + "px Arial";
-    text = this.player.equipment.spade[0].name;
-    textWidth = context.measureText(text).width;
-    center_x = x + UI_weaponPicBox_width / 2;
-    center_y = y + UI_WeaponNameHeight / 2;
-    context.fillStyle = "#222";
-    context.fillText(text,
-        center_x - textWidth / 2,
-        center_y + UI_WeaponNameHeight / 2);
-
-    // 在武器左侧画出ammo
-    let ammoBoxWidth = 2 * unit_x;
-    let ammoBoxHeight = UI_weaponPicBox_height + UI_WeaponNameHeight + UI_margin_y;
-    context.fillStyle = UI_BarColor_underlay;
-    x -= UI_margin_x + ammoBoxWidth;
-    context.fillRect(x, y, ammoBoxWidth, ammoBoxHeight);
-
-    if (this.player.equipment.spade[0].fireState != "reloading") {
-        // 画出子弹数量
-        let ammo = this.player.equipment.spade[0].ammo;
-        let ammo_max = this.player.equipment.spade[0].ammo_max;
-        let ammoWidth = ammoBoxWidth - overblood * 2;
-        let ammoHeight = (ammoBoxHeight - overblood * 2) / ammo_max * 4 / 5;
-        let ammoMargin = ammoHeight / 4;
-        x += overblood;
-        y += ammoBoxHeight - overblood;
-        context.fillStyle = "ghostwhite";
-        for (let i = 0; i < ammo; i++) {
-            y -= ammoHeight;
-            context.fillRect(x, y, ammoWidth, ammoHeight);
-            y -= ammoMargin;
+    if (this.player.equipment.spade.length > 0) {
+        if (picDic[this.player.equipment.spade[0].pic_src]) {
+            let img = new Image();
+            img.src = picDic[this.player.equipment.spade[0].pic_src];
+            // 居中绘制
+            let scale = Math.min((UI_weaponPicBox_width - overblood * 2) / img.width, (UI_weaponPicBox_height - overblood * 2) / img.height);
+            let drawWidth = img.width * scale;
+            let drawHeight = img.height * scale;
+            context.drawImage(img, x + UI_weaponPicBox_width / 2 - drawWidth / 2, y + UI_weaponPicBox_height / 2 - drawHeight / 2, drawWidth, drawHeight);
+        } else {
+            // 请求图片
+            socket_file.send(JSON.stringify({ type: "item_pic", pic_src: this.player.equipment.spade[0].pic_src }));
+            // 绘制默认图片
+            context.fillStyle = "black";
+            context.fillRect(x + overblood, y + overblood, UI_weaponPicBox_width - overblood * 2, UI_weaponPicBox_height - overblood * 2);
         }
-    } else {
-        // 用绿色画出reload时间的比例
-        let time = this.player.equipment.spade[0].time;
-        let startReload = this.player.equipment.spade[0].startReload;
-        let reload = this.player.equipment.spade[0].reload;
-        let reloadWidth = ammoBoxWidth - overblood * 2;
-        let reloadHeight = (ammoBoxHeight - overblood * 2) * (time - startReload) / reload;
-        x += overblood;
-        y += ammoBoxHeight - overblood - reloadHeight;
-        context.fillStyle = "#73ca73";
-        context.fillRect(x, y, reloadWidth, reloadHeight);
-    }
 
+        // 在其上绘制武器名称
+        let UI_WeaponNameHeight = 2.4 * unit_y;
+        y -= UI_margin_y + UI_WeaponNameHeight;
+        context.fillStyle = "#eeeeee88";
+        context.fillRect(x, y, UI_weaponPicBox_width, UI_WeaponNameHeight);
+        context.font = UI_WeaponNameHeight + "px Arial";
+        text = this.player.equipment.spade[0].name;
+        textWidth = context.measureText(text).width;
+        center_x = x + UI_weaponPicBox_width / 2;
+        center_y = y + UI_WeaponNameHeight / 2;
+        context.fillStyle = "#222";
+        context.fillText(text,
+            center_x - textWidth / 2,
+            center_y + UI_WeaponNameHeight / 2);
+
+        // 在武器左侧画出ammo
+        let ammoBoxWidth = 2 * unit_x;
+        let ammoBoxHeight = UI_weaponPicBox_height + UI_WeaponNameHeight + UI_margin_y;
+        context.fillStyle = UI_BarColor_underlay;
+        x -= UI_margin_x + ammoBoxWidth;
+        context.fillRect(x, y, ammoBoxWidth, ammoBoxHeight);
+
+        if (this.player.equipment.spade[0].fireState != "reloading") {
+            // 画出子弹数量
+            let ammo = this.player.equipment.spade[0].ammo;
+            let ammo_max = this.player.equipment.spade[0].ammo_max;
+            let ammoWidth = ammoBoxWidth - overblood * 2;
+            let ammoHeight = (ammoBoxHeight - overblood * 2) / ammo_max * 4 / 5;
+            let ammoMargin = ammoHeight / 4;
+            x += overblood;
+            y += ammoBoxHeight - overblood;
+            context.fillStyle = "ghostwhite";
+            for (let i = 0; i < ammo; i++) {
+                y -= ammoHeight;
+                context.fillRect(x, y, ammoWidth, ammoHeight);
+                y -= ammoMargin;
+            }
+        } else {
+            // 用绿色画出reload时间的比例
+            let time = this.player.equipment.spade[0].time;
+            let startReload = this.player.equipment.spade[0].startReload;
+            let reload = this.player.equipment.spade[0].reload;
+            let reloadWidth = ammoBoxWidth - overblood * 2;
+            let reloadHeight = (ammoBoxHeight - overblood * 2) * (time - startReload) / reload;
+            x += overblood;
+            y += ammoBoxHeight - overblood - reloadHeight;
+            context.fillStyle = "#73ca73";
+            context.fillRect(x, y, reloadWidth, reloadHeight);
+        }
+    }
 }
 
 Game.prototype.draw = function(context, map_id, players, items, bullets) {
@@ -907,6 +960,9 @@ Game.prototype.draw = function(context, map_id, players, items, bullets) {
 
     // 画出地图
     this.draw_map(context);
+
+    // 画出所有物品
+    this.draw_items(context, items);
 
     // 画出所有玩家
     this.draw_all_players(context, players);
