@@ -36,6 +36,10 @@ const _enumConstants = [
     "ITEM_CLASS_WHITE", "ITEM_CLASS_BLACK",
     "ITEM_STATE_WILD", "ITEM_STATE_EQUIPPED", "ITEM_STATE_SHOP",
 ];
+/**
+ * @readonly
+ * @enum {number}
+ */
 const enums = createConstants(..._enumConstants);
 
 
@@ -179,23 +183,26 @@ class Bullet {
  * @property {string} info
  * @property {number} id
  * @property {string} belongerIp
- * @property {{x: Number, y: Number}} pos
  * @property {number} state
+ * with position
+ * @property {number} mapId
+ * @property {{x: Number, y: Number}} pos
  */
 class Item {
     /**
      * 
      * @param {string} _name 物品名
      * @param {string} _pic_src 图片路径
-     * @param {enums} _type 枚举类型
-     * @param {emums} _class 黑或白的枚举类型
+     * @param {number} _type 枚举类型
+     * @param {number} _class 黑或白的枚举类型
      * @param {number} _tier 物品等级
      * @param {number} _price 商店价值
      * @param {string} _colour 颜色
      * @param {string} _info 物品的说明
+     * @param {number} _mapId 地图Id
      * @param {{x:number, y:number}} _pos 位置
      */
-    constructor(_name, _pic_src, _type, _class, _tier, _price, _colour, _info, _pos) {
+    constructor(_name, _pic_src, _type, _class, _tier, _price, _colour, _info, _mapId, _pos) {
         this.name = _name || "default item";
         this.pic_src = _pic_src || this.name;
         this.type = _type; // ITEM_TYPE_SPADE, ITEM_TYPE_CLUB, ITEM_TYPE_HEART, ITEM_TYPE_DIAMOND
@@ -207,6 +214,7 @@ class Item {
         this.info = _info;
         this.id = this.id_iterator++;
         this.belongerIp = "";
+        this.mapId = _mapId || 0;
         this.pos = deepCopy(_pos) || { x: 0, y: 0 };
         this.state = enums.ITEM_STATE_WILD; // ITEM_STATE_WILD, ITEM_STATE_EQUIPPED, ITEM_STATE_SHOP
     }
@@ -294,6 +302,7 @@ class Spade extends Item {
 
 /**
  * @class Chara
+ * @classdesc 玩家操纵的角色
  * with movement
  * @property {{x: Number, y: Number}} loc
  * @property {{x: Number, y: Number}} vel
@@ -449,6 +458,7 @@ class Chara {
 
 /**
  * @class Player
+ * @classdesc 一个用户对象
  * @property {Chara} chara
  * @property {WebSocket} ws
  * @property {Boolean} isRobo
@@ -482,14 +492,12 @@ class Player {
 }
 
 /**
- * @typedef {Object} playerDic
- * @property {Player} value - 值
- */
-/**
  * 字典: 索引是ip -> 值为Player对象
- * @type {playerDic}
+ * @property {Player} [value]
  */
-const playerDic = {};
+const playerDic = {
+    /** @member {Player} */
+};
 /**
  * 字典: mapId -> [Bullet]
  * @type {Array<Array<Bullet>}
@@ -497,7 +505,7 @@ const playerDic = {};
 const bulletDic = [];
 /**
  * @typedef {Object} itemDic
- * @property {Item} value - 值
+ * @property {Item} [value] - 值
  */
 /**
  * 字典: 索引是id -> 值为Item对象
@@ -1071,6 +1079,7 @@ class GAME {
             case enums.ITEM_STATE_SHOP:
                 break;
             case enums.ITEM_STATE_EQUIPPED:
+                item.mapId = playerDic[item.belongerIp].chara.current_mapId;
                 item.update();
                 break;
         }
@@ -1276,7 +1285,7 @@ class GAME {
             let map_id = map.mapId;
             dic[map_id] = {
                 players: allCharas.filter((player) => player.current_mapId == map_id),
-                items: allItems.filter((item) => item.current_mapId == map_id),
+                items: allItems.filter((item) => item.mapId == map_id),
                 bullets: bulletDic[map_id] || [],
             };
         });
