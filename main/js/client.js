@@ -516,7 +516,7 @@ Game.prototype.draw_item = function(context, item) {
         let scale = Math.min((len) / img.width, (len) / img.height);
         let drawWidth = img.width * scale;
         let drawHeight = img.height * scale;
-        context.drawImage(img, x + this.tile_size / 2 - drawWidth / 2, y + this.tile_size / 2 - drawHeight / 2, drawWidth, drawHeight);
+        context.drawImage(img, x - drawWidth / 2, y - drawHeight / 2, drawWidth, drawHeight);
     } else {
         // 请求图片
         socket_file.send(JSON.stringify({ type: "item_pic", pic_src: item.pic_src }));
