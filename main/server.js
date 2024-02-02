@@ -27,6 +27,7 @@ const createConstants = (function() {
 })();
 const _enumConstants = [
     "BULLET_TYPE_NORMAL",
+    "BULLET_TYPE_GOLD",
     "BULLET_TYPE_EXPLOSIVE",
     "BULLET_TYPE_LASER",
     "SHAPE_CIRCLE",
@@ -123,6 +124,7 @@ class Bullet {
     // todo: 展望: 考虑出一个子弹的json, 存储数值, 轨迹, 效果等, 发给客户端还能实现特效和音效
 
     init() {
+        let dx, dy, d;
         switch (this.type) {
             case enums.BULLET_TYPE_NORMAL:
             default:
@@ -131,12 +133,25 @@ class Bullet {
                 this.colour = "#f00";
                 this.acc = { x: 0, y: 0 };
                 // 由begin_point和end_point确定方向, 向量的模为speed
-                let dx = this.end_point.x - this.begin_point.x;
-                let dy = this.end_point.y - this.begin_point.y;
-                let d = Math.sqrt(dx * dx + dy * dy);
+                dx = this.end_point.x - this.begin_point.x;
+                dy = this.end_point.y - this.begin_point.y;
+                d = Math.sqrt(dx * dx + dy * dy);
                 this.vel.x += this.speed * dx / d;
                 this.vel.y += this.speed * dy / d;
                 break;
+            case enums.BULLET_TYPE_GOLD:
+                this.size = 36;
+                this.shape = enums.SHAPE_CIRCLE;
+                this.colour = "#ffd745";
+                this.acc = { x: 0, y: 0 };
+                // 由begin_point和end_point确定方向, 向量的模为speed
+                dx = this.end_point.x - this.begin_point.x;
+                dy = this.end_point.y - this.begin_point.y;
+                d = Math.sqrt(dx * dx + dy * dy);
+                this.vel.x += this.speed * dx / d;
+                this.vel.y += this.speed * dy / d;
+                break;
+
         }
     }
 
@@ -169,6 +184,7 @@ class Bullet {
 }
 
 /**
+ * @type
  * @class Item
  * @classdesc 物品类, 包括四种子类: spade, club, heart, diamond
  * with basic_attributes
@@ -212,13 +228,13 @@ class Item {
 
         this.colour = _colour;
         this.info = _info;
-        this.id = this.id_iterator++;
+        this.id = itemIterator++;
+        console.log
         this.belongerIp = "";
         this.mapId = _mapId || 0;
         this.pos = deepCopy(_pos) || { x: 0, y: 0 };
         this.state = enums.ITEM_STATE_WILD; // ITEM_STATE_WILD, ITEM_STATE_EQUIPPED, ITEM_STATE_SHOP
     }
-    id_iterator = 0;
 
     /**
      * 更新物品的归属者
@@ -265,10 +281,14 @@ class Spade extends Item {
      */
     constructor(_name = "default spade", _pic_src = "default_src", _type = 0, _class = 0, _tier = 0, _price = 0, _colour = "#000", _info = "物品说明") {
         super(_name, _pic_src, _type, _class, _tier, _price, _colour, _info);
+        this.type = enums.ITEM_TYPE_SPADE;
 
+        /** @default 20 */
         this.ammo_max = 20;
         this.ammo = this.ammo_max;
+        /** @default 300 */
         this.delay = 300;
+        /** @default 1000 */
         this.reload = 1000;
 
         this.time = new Date().getTime();
@@ -325,6 +345,7 @@ class Spade extends Item {
  * @property {Boolean} glide_ability
  * @property {Boolean} dash_ability
  * @property {Boolean} float_ability
+ * @property {Number} pickRange
  * with equipment
  * @property {{club: Item, heart: Item, spade: Item, diamond: Item}} equipment
  * with state
@@ -382,6 +403,8 @@ class Chara {
         this.dash_ability = true;
         this.float_ability = true;
 
+        this.pickRange = 1.5;
+
         this.buff = [{}];
         this.equipment = {
             club: [],
@@ -408,6 +431,18 @@ class Chara {
     }
 
     /**
+     * 将角色的实际位置转换成数据位置
+     * @param {GAME} game 
+     * @returns {{x:Number,y:NamedCurve}}
+     */
+    getDigitPosition(game) {
+        return {
+            x: this.loc.x / game.maps[this.current_mapId].tile_size,
+            y: this.loc.y / game.maps[this.current_mapId].tile_size,
+        }
+    }
+
+    /**
      * 角色拾取物品
      * @param {Item} item
      */
@@ -419,44 +454,61 @@ class Chara {
         else this.state.money -= item.price;
 
         // 检查有无重合(type和class一致), 如果有则替换, 无则直接装备
-        let itemEquipped = null;
-        let itemClass = item.class - enums.ITEM_CLASS_WHITE;
+        // let itemEquipped = null;
+        // let itemClass = item.class - enums.ITEM_CLASS_WHITE;
+        // 新思路: 战斗的时候不用管, 直接全拿上就行
         switch (item.type) {
             case enums.ITEM_TYPE_SPADE:
-                if (item.class == enums.ITEM_CLASS_WHITE && this.equipment.spade[0]) itemEquipped = this.equipment.spade[0];
-                else if (item.class == enums.ITEM_CLASS_BLACK && this.equipment.spade[1]) itemEquipped = this.equipment.spade[1];
-                else this.equipment.spade[itemClass] = item;
+                this.equipment.spade.push(item);
                 break;
             case enums.ITEM_TYPE_CLUB:
-                if (item.class == enums.ITEM_CLASS_WHITE && this.equipment.club[0]) itemEquipped = this.equipment.club[0];
-                else if (item.class == enums.ITEM_CLASS_BLACK && this.equipment.club[1]) itemEquipped = this.equipment.club[1];
-                else this.equipment.club[itemClass] = item;
+                this.equipment.club.push(item);
                 break;
             case enums.ITEM_TYPE_HEART:
-                if (item.class == enums.ITEM_CLASS_WHITE && this.equipment.heart[0]) itemEquipped = this.equipment.heart[0];
-                else if (item.class == enums.ITEM_CLASS_BLACK && this.equipment.heart[1]) itemEquipped = this.equipment.heart[1];
-                else this.equipment.heart[itemClass] = item;
+                this.equipment.heart.push(item);
                 break;
             case enums.ITEM_TYPE_DIAMOND:
-                if (item.class == enums.ITEM_CLASS_WHITE && this.equipment.diamond[0]) itemEquipped = this.equipment.diamond[0];
-                else if (item.class == enums.ITEM_CLASS_BLACK && this.equipment.diamond[1]) itemEquipped = this.equipment.diamond[1];
-                else this.equipment.diamond[itemClass] = item;
+                this.equipment.diamond.push(item);
                 break;
             default:
+                console.log("item的type不规范!")
+                break;
+                // case enums.ITEM_TYPE_SPADE:
+                //     if (item.class == enums.ITEM_CLASS_WHITE && this.equipment.spade[0]) itemEquipped = this.equipment.spade[0];
+                //     else if (item.class == enums.ITEM_CLASS_BLACK && this.equipment.spade[1]) itemEquipped = this.equipment.spade[1];
+                //     else this.equipment.spade[itemClass] = item;
+                //     break;
+                // case enums.ITEM_TYPE_CLUB:
+                //     if (item.class == enums.ITEM_CLASS_WHITE && this.equipment.club[0]) itemEquipped = this.equipment.club[0];
+                //     else if (item.class == enums.ITEM_CLASS_BLACK && this.equipment.club[1]) itemEquipped = this.equipment.club[1];
+                //     else this.equipment.club[itemClass] = item;
+                //     break;
+                // case enums.ITEM_TYPE_HEART:
+                //     if (item.class == enums.ITEM_CLASS_WHITE && this.equipment.heart[0]) itemEquipped = this.equipment.heart[0];
+                //     else if (item.class == enums.ITEM_CLASS_BLACK && this.equipment.heart[1]) itemEquipped = this.equipment.heart[1];
+                //     else this.equipment.heart[itemClass] = item;
+                //     break;
+                // case enums.ITEM_TYPE_DIAMOND:
+                //     if (item.class == enums.ITEM_CLASS_WHITE && this.equipment.diamond[0]) itemEquipped = this.equipment.diamond[0];
+                //     else if (item.class == enums.ITEM_CLASS_BLACK && this.equipment.diamond[1]) itemEquipped = this.equipment.diamond[1];
+                //     else this.equipment.diamond[itemClass] = item;
+                //     break;
+                // default:
                 break;
         }
 
         // 如果有重合, 则将原有物品丢弃, 并更新其状态
-        if (itemEquipped) {
-            itemEquipped.belongerIp = "";
-            itemEquipped.pos = deepCopy(this.loc);
-            itemEquipped.state = enums.ITEM_STATE_WILD;
-        }
+        // if (itemEquipped) {
+        //     itemEquipped.belongerIp = "";
+        //     itemEquipped.pos = deepCopy(this.loc);
+        //     itemEquipped.state = enums.ITEM_STATE_WILD;
+        // }
         item.updateBelonger(this);
     }
 }
 
 /**
+ * @type
  * @class Player
  * @classdesc 一个用户对象
  * @property {Chara} chara
@@ -488,6 +540,8 @@ class Player {
         this.isRobo = false;
         this.time = 0;
         this.latency = 0;
+
+        this.pick_switch = 0;
     }
 }
 
@@ -512,6 +566,7 @@ const bulletDic = [];
  * @type {itemDic}
  */
 const itemDic = {};
+let itemIterator = 0;
 
 // div:初始化websocket
 // 以wifi的ip地址作为服务器的ip地址, port: 432 作为端口号
@@ -625,6 +680,16 @@ const deepCopy = function(source, kaiguan) {
         }
     }
     return result;
+}
+
+/**
+ * 获得两个{x,y}之间的距离
+ * @param {{x:Number, y:Number}} A
+ * @param {{x:Number, y:Number}} B
+ * @returns {Number}
+ */
+const getDistance = function(A, B) {
+    return Math.sqrt((A.x - B.x) ^ 2 + (A.y - B.y) ^ 2);
 }
 
 
@@ -1149,9 +1214,9 @@ class GAME {
             player.chara.can_dash = false;
             player.dash_switch = 5;
         }
-        if (player.key.pick && player.chara.float_ability && player.chara.can_float) {
-            player.chara.can_float = false;
-        }
+        // if (player.key.pick && player.chara.float_ability && player.chara.can_float) {
+        //     player.chara.can_float = false;
+        // }
 
         /* 行动相关 */
         // 攻击
@@ -1189,29 +1254,20 @@ class GAME {
             }
         }
         // 拾取
-        if (player.key.pick) {
-            return; // TODO: 这里先不处理
+        if (!player.pick_switch && player.key.pick) {
+            console.log("can pick");
             // 检查当前位置是否有道具
-            let items = Object.values(itemDic[player.chara.current_mapId]);
+            let items = Object.values(itemDic).filter(item => item.mapId == player.chara.current_mapId && item.state != enums.ITEM_STATE_EQUIPPED);
             items.forEach(item => {
-                if (item.isInRange(player.chara.loc.x, player.chara.loc.y)) {
+                if (getDistance(item.pos, player.chara.getDigitPosition(this)) < player.chara.pickRange) {
                     // 拾取道具
                     // console.log(`玩家${player.chara.name}拾取了道具${item.name}`);
-                    if (player.chara.equipment[item.type]) {
-                        // 如果已经有同类型的道具, 则替换
-                        let oldItem = player.chara.equipment[item.type];
-                        // 将旧道具放到地上
-                        oldItem.loc.x = player.chara.loc.x;
-                        oldItem.loc.y = player.chara.loc.y;
-                        itemDic[player.chara.current_mapId].push(oldItem);
-                    }
-                    player.chara.equipment[item.type] = item;
-                    // 删除道具
-                    let index = items.indexOf(item);
-                    items.splice(index, 1);
+                    player.chara.pickItem(item);
                 }
             });
-        }
+            player.pick_switch = true;
+        } else if (!player.key.pick) player.pick_switch = false;
+
 
         this.move_player(player);
         this.update_items(player);
@@ -1335,8 +1391,17 @@ robo2.chara.loc.y = game.maps[robo2.chara.current_mapId].player.y;
 let wild_item = new Spade("basic pistal", "basic pistal");
 wild_item.state = enums.ITEM_STATE_WILD;
 itemDic[wild_item.id] = wild_item;
-wild_item.pos.x = 16;
-wild_item.pos.y = 18;
+wild_item.pos.x = 3;
+wild_item.pos.y = 7;
+
+let wild_item2 = new Spade("gold fox", "gold fox", 0, 0, 1, 10, "yellow", "雪狐土豪金");
+wild_item2.state = enums.ITEM_STATE_WILD;
+itemDic[wild_item2.id] = wild_item2;
+wild_item2.pos.x = 30;
+wild_item2.pos.y = 7;
+wild_item2.delay = 120;
+wild_item2.ammo_max = 30;
+wild_item2.bullet_state.type = enums.BULLET_TYPE_GOLD;
 
 setInterval(() => {
     game.update();
