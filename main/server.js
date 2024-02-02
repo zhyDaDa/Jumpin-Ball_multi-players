@@ -180,8 +180,21 @@ class Bullet {
  * @property {number} id
  * @property {string} belongerIp
  * @property {{x: Number, y: Number}} pos
+ * @property {number} state
  */
 class Item {
+    /**
+     * 
+     * @param {string} _name 物品名
+     * @param {string} _pic_src 图片路径
+     * @param {enums} _type 枚举类型
+     * @param {emums} _class 黑或白的枚举类型
+     * @param {number} _tier 物品等级
+     * @param {number} _price 商店价值
+     * @param {string} _colour 颜色
+     * @param {string} _info 物品的说明
+     * @param {{x:number, y:number}} _pos 位置
+     */
     constructor(_name, _pic_src, _type, _class, _tier, _price, _colour, _info, _pos) {
         this.name = _name || "default item";
         this.pic_src = _pic_src || this.name;
@@ -215,6 +228,7 @@ class Item {
  * @classdesc 武器类, 用于攻击
  * @extends Item
  * @inheritdoc
+ * with 
  * with ammo
  * @property {number} ammo_max
  * @property {number} ammo
@@ -229,6 +243,18 @@ class Item {
  * @property {{type: number, speed: number, damage_direct: number, damage_slice: number, damage_continuous: number, damage_explosion: number}} bullet_state
  */
 class Spade extends Item {
+    /**
+     * 
+     * @param {string} _name 物品名
+     * @param {string} _pic_src 图片路径
+     * @param {enums} _type 枚举类型
+     * @param {emums} _class 黑或白的枚举类型
+     * @param {number} _tier 物品等级
+     * @param {number} _price 商店价值
+     * @param {string} _colour 颜色
+     * @param {string} _info 物品的说明
+     * @param {{x:number, y:number}} _pos 位置
+     */
     constructor(_name = "default spade", _pic_src = "default_src", _type = 0, _class = 0, _tier = 0, _price = 0, _colour = "#000", _info = "物品说明") {
         super(_name, _pic_src, _type, _class, _tier, _price, _colour, _info);
 
@@ -369,9 +395,7 @@ class Chara {
         };
         this.ip = "";
 
-        this.equipment.spade[0] = new Spade();
-        this.equipment.spade[0].name = "basic pistal";
-        this.equipment.spade[0].pic_src = "basic pistal";
+        // this.equipment.spade[0] = new Spade("basic pistal", "basic pistal");
     }
 
     /**
@@ -1036,11 +1060,26 @@ class GAME {
 
     }
 
+    /**
+     * 更新所有item
+     * @param {Item} item
+     */
+    update_item = function(item) {
+        switch (item.state) {
+            case enums.ITEM_STATE_WILD:
+                break;
+            case enums.ITEM_STATE_SHOP:
+                break;
+            case enums.ITEM_STATE_EQUIPPED:
+                item.update();
+                break;
+        }
+    }
+
     update_items = function(player) {
-        // 处理玩家的装备 TODO: 改为对所有Item的处理
-        let equipment = player.chara.equipment;
-        if (equipment.spade[0]) equipment.spade[0].update();
-        player.chara.equipment.spade[0].fireState
+        for (let item of itemDic) {
+            update_item(item);
+        }
     }
 
 
@@ -1222,6 +1261,7 @@ class GAME {
         // client端: game.draw(ctx, data.map_id, data.players);
         let _this = (this);
         let allCharas = Object.values(playerDic).map((player) => player.chara);
+        let allItems = Object.values(itemDic);
         let data = {
             map_id: 0,
             players: [],
@@ -1236,7 +1276,7 @@ class GAME {
             let map_id = map.mapId;
             dic[map_id] = {
                 players: allCharas.filter((player) => player.current_mapId == map_id),
-                items: [],
+                items: allItems.filter((item) => item.current_mapId == map_id),
                 bullets: bulletDic[map_id] || [],
             };
         });
@@ -1282,6 +1322,12 @@ robo2.chara.colour = '#222';
 robo2.chara.current_mapId = 1;
 robo2.chara.loc.x = game.maps[robo2.chara.current_mapId].player.x;
 robo2.chara.loc.y = game.maps[robo2.chara.current_mapId].player.y;
+
+let wild_item = new Spade("basic pistal", "basic pistal");
+wild_item.state = enums.ITEM_STATE_WILD;
+itemDic[wild_item.id] = wild_item;
+wild_item.pos.x = 16;
+wild_item.pos.y = 18;
 
 setInterval(() => {
     game.update();
