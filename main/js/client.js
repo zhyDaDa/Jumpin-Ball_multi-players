@@ -155,6 +155,7 @@ var Game = function() {
         dash: false,
         pick: false,
         reload: false,
+        switch: false,
         mouse_l: false,
         mouse_m: false,
         mouse_r: false,
@@ -260,6 +261,9 @@ Game.prototype.keydown = function(e) {
         case 82: //r
             _this.key.reload = true;
             break;
+        case 9: //tab
+            _this.key.switch = true;
+            break;
         default:
             // case 79: //o
             //     this.load_map(0);
@@ -310,6 +314,9 @@ Game.prototype.keyup = function(e) {
             break;
         case 82: //r
             _this.key.reload = false;
+            break;
+        case 9: //tab
+            _this.key.switch = false;
             break;
         default:
     }

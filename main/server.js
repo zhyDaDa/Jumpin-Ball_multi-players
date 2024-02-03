@@ -529,6 +529,7 @@ class Player {
             dash: false,
             pick: false,
             reload: false,
+            switch: false,
             mouse_l: false,
             mouse_m: false,
             mouse_r: false,
@@ -1241,6 +1242,7 @@ class GAME {
                 }
             }
         }
+        // 装填
         if (player.key.reload) {
             let spade = player.chara.equipment.spade[0];
             if (spade && spade.ammo < spade.ammo_max && spade.fireState != "reloading") {
@@ -1263,7 +1265,16 @@ class GAME {
             });
             player.pick_switch = true;
         } else if (!player.key.pick) player.pick_switch = false;
-
+        // 切换武器
+        if (!player.switch_switch && player.key.switch) {
+            if (player.chara.equipment.spade.length > 1) {
+                // 0和1位置的武器互换
+                let temp = player.chara.equipment.spade[0];
+                player.chara.equipment.spade[0] = player.chara.equipment.spade[1];
+                player.chara.equipment.spade[1] = temp;
+            }
+            player.switch_switch = true;
+        } else if (!player.key.switch) player.switch_switch = false;
 
         this.move_player(player);
         this.update_items(player);
