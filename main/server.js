@@ -438,9 +438,10 @@ class Chara {
      * @returns {{x:Number,y:NamedCurve}}
      */
     getDigitPosition(game) {
+        let tile_size = game.maps[this.current_mapId].tile_size;
         return {
-            x: this.loc.x / game.maps[this.current_mapId].tile_size,
-            y: this.loc.y / game.maps[this.current_mapId].tile_size,
+            x: this.loc.x / tile_size,
+            y: this.loc.y / tile_size,
         }
     }
 
@@ -692,7 +693,7 @@ const deepCopy = function(source, kaiguan) {
  * @returns {Number}
  */
 const getDistance = function(A, B) {
-    return Math.sqrt((A.x - B.x) ^ 2 + (A.y - B.y) ^ 2);
+    return Math.sqrt(Math.pow(A.x - B.x, 2) + Math.pow(A.y - B.y, 2));
 }
 
 
@@ -774,6 +775,8 @@ class GAME {
     get_tile_from_mapId = function(mapId) {
         let _this = (this)
         return function(x, y) {
+            x = Math.floor(x);
+            y = Math.floor(y);
             let current_map = _this.maps[mapId];
             return (current_map.data[y] && current_map.data[y][x]) ? deepCopy(current_map.keys[current_map.data[y][x]]) : 0;
         };
@@ -820,33 +823,19 @@ class GAME {
         let _this = (this);
         let current_map = _this.maps[obj.current_mapId];
         let tile_size = current_map.tile_size;
-        let offset = Math.round((tile_size / 2) - 1);
+        let offset = Math.round((obj.size / 2) - 1);
+
+        let relative_X = obj.loc.x + tile_size / 2;
+        let relative_Y = obj.loc.y + tile_size / 2;
 
         let get_tile = this.get_tile_from_mapId(obj.current_mapId);
 
-        let t_y_up = Math.floor(obj.loc.y / tile_size);
-        let t_y_down = Math.ceil(obj.loc.y / tile_size);
-        let y_near1 = Math.round((obj.loc.y - offset) / tile_size);
-        let y_near2 = Math.round((obj.loc.y + offset) / tile_size);
+        let left = get_tile((relative_X - offset) / tile_size, relative_Y / tile_size);
+        let right = get_tile((relative_X + offset) / tile_size, relative_Y / tile_size);
+        let top = get_tile(relative_X / tile_size, (relative_Y - offset) / tile_size);
+        let bottom = get_tile(relative_X / tile_size, (relative_Y + offset) / tile_size);
 
-        let t_x_left = Math.floor(obj.loc.x / tile_size);
-        let t_x_right = Math.ceil(obj.loc.x / tile_size);
-        let x_near1 = Math.round((obj.loc.x - offset) / tile_size);
-        let x_near2 = Math.round((obj.loc.x + offset) / tile_size);
-
-        let top1 = get_tile(x_near1, t_y_up);
-        let top2 = get_tile(x_near2, t_y_up);
-        let bottom1 = get_tile(x_near1, t_y_down);
-        let bottom2 = get_tile(x_near2, t_y_down);
-        let left1 = get_tile(t_x_left, y_near1);
-        let left2 = get_tile(t_x_left, y_near2);
-        let right1 = get_tile(t_x_right, y_near1);
-        let right2 = get_tile(t_x_right, y_near2);
-
-        return ((left1.solid && left2.solid) ||
-            (right1.solid && right2.solid) ||
-            (top1.solid && top2.solid) ||
-            (bottom1.solid && bottom2.solid));
+        return left.solid || right.solid || top.solid || bottom.solid;
     }
 
     /**
@@ -905,6 +894,7 @@ class GAME {
         /* div:物理信息获取 */
         let _this = (this);
 
+        // TODO: 由于玩家和砖块大小一致, 所以不用考虑anchor点的差距, 实际上还是要算上size/2的偏差
         // TODO: 是否需要提前将移动产生的加速度加到速度上
         let tX = player.chara.loc.x + player.chara.vel.x;
         let tY = player.chara.loc.y + player.chara.vel.y;
@@ -1259,6 +1249,7 @@ class GAME {
             // 检查当前位置是否有道具
             let items = Object.values(itemDic).filter(item => item.mapId == player.chara.current_mapId && item.state != enums.ITEM_STATE_EQUIPPED);
             items.forEach(item => {
+                console.log(`${item.name} at (${item.pos.x},${item.pos.y}), distance: ${getDistance(item.pos, player.chara.getDigitPosition(this))}`);
                 if (getDistance(item.pos, player.chara.getDigitPosition(this)) < player.chara.pickRange) {
                     // 拾取道具
                     // console.log(`玩家${player.chara.name}拾取了道具${item.name}`);
