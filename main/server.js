@@ -984,18 +984,6 @@ class GAME {
                 player.chara.acc.y -= a * Math.sign(player.chara.vel.y);
         }
 
-        if (tile.jump && player.jump_switch > 15) {
-
-            player.chara.can_jump = true;
-            player.chara.doublejumpFlag = false;
-            player.chara.can_doublejump = true;
-
-            player.chara.can_dash = true;
-
-            player.jump_switch = 0;
-
-        } else player.jump_switch++;
-
         // 普通方式的速度修改在这里结算
         player.chara.vel.x += player.chara.acc.x;
         player.chara.vel.y += player.chara.acc.y;
@@ -1067,6 +1055,20 @@ class GAME {
             return;
         }
 
+        function abilityRefresh() {
+            player.chara.can_jump = true;
+            player.chara.doublejumpFlag = false;
+            player.chara.can_doublejump = true;
+
+            player.chara.can_dash = true;
+        }
+
+        if ((left1.jump || left2.jump || right1.jump || right2.jump) && player.jump_switch > 15) {
+            abilityRefresh();
+            player.jump_switch = 0;
+
+        } else player.jump_switch++;
+
         if (left1.solid || left2.solid || right1.solid || right2.solid) {
 
             /* 解决重叠 */
@@ -1094,15 +1096,9 @@ class GAME {
                 player.chara.loc.y -= 0.1;
 
             /* 着地判断 */
-            if ((bottom1.solid || bottom2.solid) && !tile.jump) {
-
-                player.chara.on_floor = true;
-                player.chara.can_jump = true;
-                player.chara.can_doublejump = true;
-                player.chara.doublejumpFlag = false;
-
-                player.chara.can_dash = true;
-
+            if ((bottom1.solid || bottom2.solid)) {
+                // player.chara.on_floor = true; // TODO: 若有需要的话还要额外补充不在floor的情况
+                abilityRefresh();
             }
 
         }
