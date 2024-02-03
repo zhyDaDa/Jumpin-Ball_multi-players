@@ -732,21 +732,36 @@ Game.prototype.update_leaderBoard = function(players) {
 
 Game.prototype.draw_cursor = function(context) {
     const _this = (this);
-    // TODO: 玩家按着左键时, 准星缩小
     // 画出准星, 由四个矩形组成
-    context.beginPath();
-    context.strokeStyle = "white";
-    context.lineWidth = .2 * cursor_size;
-    context.moveTo(_this.mouse.x + .2 * cursor_size, _this.mouse.y);
-    context.lineTo(_this.mouse.x + 0.72 * cursor_size, _this.mouse.y);
-    context.moveTo(_this.mouse.x - .2 * cursor_size, _this.mouse.y);
-    context.lineTo(_this.mouse.x - 0.72 * cursor_size, _this.mouse.y);
-    context.moveTo(_this.mouse.x, _this.mouse.y + .2 * cursor_size);
-    context.lineTo(_this.mouse.x, _this.mouse.y + 0.72 * cursor_size);
-    context.moveTo(_this.mouse.x, _this.mouse.y - .2 * cursor_size);
-    context.lineTo(_this.mouse.x, _this.mouse.y - 0.72 * cursor_size);
-    context.stroke();
-    context.closePath();
+    if (!this.key.mouse_l) {
+        context.beginPath();
+        context.strokeStyle = "white";
+        context.lineWidth = .2 * cursor_size;
+        context.moveTo(_this.mouse.x + .2 * cursor_size, _this.mouse.y);
+        context.lineTo(_this.mouse.x + 0.72 * cursor_size, _this.mouse.y);
+        context.moveTo(_this.mouse.x - .2 * cursor_size, _this.mouse.y);
+        context.lineTo(_this.mouse.x - 0.72 * cursor_size, _this.mouse.y);
+        context.moveTo(_this.mouse.x, _this.mouse.y + .2 * cursor_size);
+        context.lineTo(_this.mouse.x, _this.mouse.y + 0.72 * cursor_size);
+        context.moveTo(_this.mouse.x, _this.mouse.y - .2 * cursor_size);
+        context.lineTo(_this.mouse.x, _this.mouse.y - 0.72 * cursor_size);
+        context.stroke();
+        context.closePath();
+    } else {
+        context.beginPath();
+        context.strokeStyle = "white";
+        context.lineWidth = .18 * cursor_size;
+        context.moveTo(_this.mouse.x + .18 * cursor_size, _this.mouse.y);
+        context.lineTo(_this.mouse.x + 0.64 * cursor_size, _this.mouse.y);
+        context.moveTo(_this.mouse.x - .18 * cursor_size, _this.mouse.y);
+        context.lineTo(_this.mouse.x - 0.64 * cursor_size, _this.mouse.y);
+        context.moveTo(_this.mouse.x, _this.mouse.y + .18 * cursor_size);
+        context.lineTo(_this.mouse.x, _this.mouse.y + 0.64 * cursor_size);
+        context.moveTo(_this.mouse.x, _this.mouse.y - .18 * cursor_size);
+        context.lineTo(_this.mouse.x, _this.mouse.y - 0.64 * cursor_size);
+        context.stroke();
+        context.closePath();
+    }
 }
 
 Game.prototype.draw_player_action = function(context) {
