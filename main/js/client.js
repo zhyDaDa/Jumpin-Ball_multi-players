@@ -163,6 +163,9 @@ var Game = function() {
         mouseY: 0,
     };
 
+    /**
+     * 光标位置是canvas坐标
+     */
     this.mouse = { x: 0, y: 0 };
 
     this.player = {
@@ -651,8 +654,13 @@ Game.prototype.update = function() {
 };
 
 Game.prototype.update_camera = function(target_x, target_y, direct) {
-    var c_x = Math.round(target_x - this.viewport.x / 2);
-    var c_y = Math.round(target_y - this.viewport.y / 2);
+    // 理想位置是目标的canvas坐标 和 光标的canvas坐标的中点
+    var c_x = (target_x - this.viewport.x / 2);
+    var c_y = (target_y - this.viewport.y / 2);
+    if (this.key.mouse_r) {
+        c_x = (c_x + this.mouse.x) / 2;
+        c_y = (c_y + this.mouse.y) / 2;
+    }
     var x_dif = Math.abs(c_x - this.camera.x);
     var y_dif = Math.abs(c_y - this.camera.y);
 
