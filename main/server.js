@@ -128,7 +128,7 @@ class Bullet {
         switch (this.type) {
             case enums.BULLET_TYPE_NORMAL:
             default:
-                this.size = 20;
+                this.size = 12;
                 this.shape = enums.SHAPE_CIRCLE;
                 this.colour = "#f00";
                 this.acc = { x: 0, y: 0 };
@@ -140,7 +140,7 @@ class Bullet {
                 this.vel.y += this.speed * dy / d;
                 break;
             case enums.BULLET_TYPE_GOLD:
-                this.size = 36;
+                this.size = 18;
                 this.shape = enums.SHAPE_CIRCLE;
                 this.colour = "#ffd745";
                 this.acc = { x: 0, y: 0 };
@@ -153,6 +153,8 @@ class Bullet {
                 break;
 
         }
+        this.loc.x += this.vel.x;
+        this.loc.y += this.vel.y;
     }
 
 
@@ -818,7 +820,7 @@ class GAME {
         let _this = (this);
         let current_map = _this.maps[obj.current_mapId];
         let tile_size = current_map.tile_size;
-        let offset = obj.size / 2;
+        let offset = Math.round((tile_size / 2) - 1);
 
         let get_tile = this.get_tile_from_mapId(obj.current_mapId);
 

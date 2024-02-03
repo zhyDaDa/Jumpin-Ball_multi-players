@@ -262,6 +262,7 @@ Game.prototype.keydown = function(e) {
             _this.key.reload = true;
             break;
         case 9: //tab
+            e.preventDefault();
             _this.key.switch = true;
             break;
         default:
@@ -316,6 +317,7 @@ Game.prototype.keyup = function(e) {
             _this.key.reload = false;
             break;
         case 9: //tab
+            e.preventDefault();
             _this.key.switch = false;
             break;
         default:
