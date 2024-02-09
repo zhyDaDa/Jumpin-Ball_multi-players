@@ -1139,7 +1139,7 @@ class GAME {
         }
     }
 
-    update_items = function(player) {
+    update_items = function() {
         for (let item of Object.values(itemDic)) {
             this.update_item(item);
         }
@@ -1270,7 +1270,6 @@ class GAME {
         } else if (!player.key.switch) player.switch_switch = false;
 
         this.move_player(player);
-        this.update_items(player);
     }
 
     /**
@@ -1318,8 +1317,9 @@ class GAME {
             });
         });
         for (let player in playerDic) {
-            game.update_player(playerDic[player]);
+            this.update_player(playerDic[player]);
         }
+        this.update_items();
     }
 
     broadcast = function() {
