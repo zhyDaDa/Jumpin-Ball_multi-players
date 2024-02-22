@@ -149,6 +149,28 @@ h6 {
     grid-area: fps;
 }
 
+#info_alert {
+    background-color: #CCC8D566;
+    width: 36vw;
+    height: 2.7vh;
+    font-size: xx-small;
+    position: fixed;
+    left: 50vw;
+    bottom: 1.5vh;
+    transform: translateX(-50%);
+    z-index: 300;
+    padding: 1rem;
+    user-select: none;
+    border-radius: .2rem;
+    text-align: center;
+}
+
+#info_alert>span {
+    font-size: 1.6vh;
+    color: #222;
+    transform: translateY(-20%);
+}
+
 .leaderboard-container {
     max-height: 18vh;
     width: 12vw;

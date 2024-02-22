@@ -44,6 +44,9 @@
             </h6>
             <h6 id="h6_6">视图缩放倍率: &nbsp;<input id="viewScale" type="range" min="0.2" max="2" step="0.01" value="1.2" style="width: 50%;" tabindex="-1" /></h6>
         </div>
+        <div id="info_alert">
+            <span>这是一个测试样例</span>
+        </div>
         <div class="leaderboard-container">
             <table class="leaderboard-table">
                 <thead>
@@ -107,6 +110,7 @@
             $('#viewScale').on('change', function(e) {
                 let data = document.querySelector('#viewScale').value;
                 zoomIndex = data;
+                localStorage.setItem("zoomIndex", data);
                 setViewZoom(data);
             });
             window.onresize = function() {

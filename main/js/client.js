@@ -11,10 +11,15 @@ const HPBarHeight = 4;
 const UI_BarColor_underlay = '#22222266';
 const UI_HPBarColor_front = '#02b05d';
 const UI_MPBarColor_front = '#19699f';
-let zoomIndex = 1.2;
 const player_info_fontSize = 12;
 const cursor_size = 20;
 const fpsBufferSize = 24;
+
+const tipBoard = document.getElementById("tipBoard");
+let playerColour = localStorage.getItem("playerColour") || "";
+let playerName = localStorage.getItem("playerName") || "";
+let zoomIndex = localStorage.getItem("zoomIndex") || 1.2;
+let trapClock = 0;
 
 /**
  * 存放物品图片
@@ -155,6 +160,7 @@ var Game = function() {
         dash: false,
         pick: false,
         reload: false,
+        switch: false,
         mouse_l: false,
         mouse_m: false,
         mouse_r: false,
@@ -162,6 +168,9 @@ var Game = function() {
         mouseY: 0,
     };
 
+    /**
+     * 光标位置是canvas坐标
+     */
     this.mouse = { x: 0, y: 0 };
 
     this.player = {
@@ -260,6 +269,10 @@ Game.prototype.keydown = function(e) {
         case 82: //r
             _this.key.reload = true;
             break;
+        case 9: //tab
+            e.preventDefault();
+            _this.key.switch = true;
+            break;
         default:
             // case 79: //o
             //     this.load_map(0);
@@ -310,6 +323,10 @@ Game.prototype.keyup = function(e) {
             break;
         case 82: //r
             _this.key.reload = false;
+            break;
+        case 9: //tab
+            e.preventDefault();
+            _this.key.switch = false;
             break;
         default:
     }
@@ -512,8 +529,8 @@ Game.prototype.draw_item = function(context, item) {
     if (picDic[item.pic_src]) {
         let img = new Image();
         img.src = picDic[item.pic_src];
-        // 居中绘制
-        let scale = Math.min((len) / img.width, (len) / img.height);
+        // 居中绘制 取物品的高度作为参考
+        let scale = len / img.height;
         let drawWidth = img.width * scale;
         let drawHeight = img.height * scale;
         context.drawImage(img, x - drawWidth / 2, y - drawHeight / 2, drawWidth, drawHeight);
@@ -540,7 +557,7 @@ Game.prototype.draw_player = function(context, player) {
     context.arc(
         player.loc.x - this.camera.x,
         player.loc.y - this.camera.y,
-        this.tile_size / 2 - 1,
+        player.size / 2 - 1,
         0,
         Math.PI * 2
     );
@@ -642,8 +659,18 @@ Game.prototype.update = function() {
 };
 
 Game.prototype.update_camera = function(target_x, target_y, direct) {
-    var c_x = Math.round(target_x - this.viewport.x / 2);
-    var c_y = Math.round(target_y - this.viewport.y / 2);
+    // 相机位置是数据坐标位置
+    var c_x = (target_x);
+    var c_y = (target_y);
+    if (this.key.mouse_r) {
+        let sightLevel = .2; // 视野越大, 能看的越远
+        c_x = c_x * (1 - sightLevel) + this.key.mouseX * sightLevel;
+        c_y = c_y * (1 - sightLevel) + this.key.mouseY * sightLevel;
+    }
+    // 平移到屏幕正中间
+    c_x -= this.viewport.x / 2;
+    c_y -= this.viewport.y / 2;
+
     var x_dif = Math.abs(c_x - this.camera.x);
     var y_dif = Math.abs(c_y - this.camera.y);
 
@@ -723,21 +750,36 @@ Game.prototype.update_leaderBoard = function(players) {
 
 Game.prototype.draw_cursor = function(context) {
     const _this = (this);
-    // TODO: 玩家按着左键时, 准星缩小
     // 画出准星, 由四个矩形组成
-    context.beginPath();
-    context.strokeStyle = "white";
-    context.lineWidth = .2 * cursor_size;
-    context.moveTo(_this.mouse.x + .2 * cursor_size, _this.mouse.y);
-    context.lineTo(_this.mouse.x + 0.72 * cursor_size, _this.mouse.y);
-    context.moveTo(_this.mouse.x - .2 * cursor_size, _this.mouse.y);
-    context.lineTo(_this.mouse.x - 0.72 * cursor_size, _this.mouse.y);
-    context.moveTo(_this.mouse.x, _this.mouse.y + .2 * cursor_size);
-    context.lineTo(_this.mouse.x, _this.mouse.y + 0.72 * cursor_size);
-    context.moveTo(_this.mouse.x, _this.mouse.y - .2 * cursor_size);
-    context.lineTo(_this.mouse.x, _this.mouse.y - 0.72 * cursor_size);
-    context.stroke();
-    context.closePath();
+    if (!this.key.mouse_l) {
+        context.beginPath();
+        context.strokeStyle = "white";
+        context.lineWidth = .2 * cursor_size;
+        context.moveTo(_this.mouse.x + .2 * cursor_size, _this.mouse.y);
+        context.lineTo(_this.mouse.x + 0.72 * cursor_size, _this.mouse.y);
+        context.moveTo(_this.mouse.x - .2 * cursor_size, _this.mouse.y);
+        context.lineTo(_this.mouse.x - 0.72 * cursor_size, _this.mouse.y);
+        context.moveTo(_this.mouse.x, _this.mouse.y + .2 * cursor_size);
+        context.lineTo(_this.mouse.x, _this.mouse.y + 0.72 * cursor_size);
+        context.moveTo(_this.mouse.x, _this.mouse.y - .2 * cursor_size);
+        context.lineTo(_this.mouse.x, _this.mouse.y - 0.72 * cursor_size);
+        context.stroke();
+        context.closePath();
+    } else {
+        context.beginPath();
+        context.strokeStyle = "white";
+        context.lineWidth = .18 * cursor_size;
+        context.moveTo(_this.mouse.x + .18 * cursor_size, _this.mouse.y);
+        context.lineTo(_this.mouse.x + 0.64 * cursor_size, _this.mouse.y);
+        context.moveTo(_this.mouse.x - .18 * cursor_size, _this.mouse.y);
+        context.lineTo(_this.mouse.x - 0.64 * cursor_size, _this.mouse.y);
+        context.moveTo(_this.mouse.x, _this.mouse.y + .18 * cursor_size);
+        context.lineTo(_this.mouse.x, _this.mouse.y + 0.64 * cursor_size);
+        context.moveTo(_this.mouse.x, _this.mouse.y - .18 * cursor_size);
+        context.lineTo(_this.mouse.x, _this.mouse.y - 0.64 * cursor_size);
+        context.stroke();
+        context.closePath();
+    }
 }
 
 Game.prototype.draw_player_action = function(context) {
@@ -950,7 +992,30 @@ Game.prototype.drawUI = function(context) {
     }
 }
 
-Game.prototype.draw = function(context, map_id, players, items, bullets) {
+Game.prototype.mouseRightShowInfo = function() {
+        // 从canvas坐标转换为数据坐标
+        let x = this.key.mouseX + this.tile_size / 2;
+        let y = this.key.mouseY + this.tile_size / 2;
+        let tile_x = Math.floor(x / this.tile_size);
+        let tile_y = Math.floor(y / this.tile_size);
+
+        // 获取该tile的信息
+        let tile = this.get_tile(tile_x, tile_y);
+
+        // 展示
+        let info_alert = document.querySelector("#info_alert");
+        info_alert.style.display = "block";
+
+        info_alert.innerHTML = `
+            <span>
+                砖块id: ${tile.id}; ${tile.solid ? "实心" : "空心"}${tile.bounce ? `; 弹力: ${tile.bounce}` : ""}${tile.friction ? `; 摩擦: {${tile.friction.x},${tile.friction.x}}` : ""}${tile.jump ? "; 可抓墙跳" : ""}
+                <br>
+                mouse: {x:${this.mouse.x.toFixed(1)}, y:${this.mouse.y.toFixed(1)}}; key: {x:${this.key.mouseX.toFixed(1)}, y:${this.key.mouseY.toFixed(1)}}; tile: {x:${tile_x}, y:${tile_y}}
+            </span>`;
+
+}
+
+Game.prototype.draw = function (context, map_id, players, items, bullets) {
     // 如果地图改变, 重新加载
     if (!this.current_map || map_id != this.current_map.mapId) this.load_map(map_id);
 
@@ -981,6 +1046,10 @@ Game.prototype.draw = function(context, map_id, players, items, bullets) {
 
     // 调整相机位置
     this.update_camera(this.player.loc.x, this.player.loc.y, false);
+
+    // 若右键按下, 在信息栏显示实体信息
+    if (this.key.mouse_r) this.mouseRightShowInfo();
+    else document.getElementById("info_alert").style.display = "none";
 };
 
 /* div: html前端杂货 */
@@ -1017,11 +1086,6 @@ function setViewZoom(zoomIndex) {
 }
 setViewZoom(zoomIndex);
 
-const tipBoard = document.getElementById("tipBoard");
-let playerColour = "" || localStorage.getItem("playerColour");
-let playerName = "" || localStorage.getItem("playerName");
-let trapClock = 0;
-
 game.pauseFlag = false;
 let anim;
 
@@ -1030,7 +1094,7 @@ game.limit_viewport = false;
 /* camera开始移动的距离差 */
 game.camer_movement_limit = { x: 10, y: 8 };
 
-const Loop = function() {
+const Loop = function () {
 
     ctx.fillStyle = game.current_map.background;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
