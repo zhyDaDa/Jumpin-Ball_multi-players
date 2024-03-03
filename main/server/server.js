@@ -1,5 +1,5 @@
 console.log('Server.js 开始运行');
-
+const serverAddress = "main/server";
 const defaultPlayerSize = 16; // 玩家的默认尺寸
 const defaultHitBoxSize = 10; // 玩家的默认碰撞箱尺寸
 const FALLEN_DAMAGE = 10; // 坠落伤害
@@ -722,7 +722,7 @@ class GAME {
 
 
     load_map = function() {
-        const data = JSON.parse(fs.readFileSync('main/json/map.json'));
+        const data = JSON.parse(fs.readFileSync(`${serverAddress}/json/map.json`));
         Object.values(data).forEach((map) => { this._load_map(map) });
         console.log(`已成功装载地图, 地图mapName: ${this.maps.map(e => e.mapName)}`);
     }
@@ -1482,9 +1482,9 @@ wss_file.on('connection', function(ws) {
             case "item_pic":
                 // 根据obj.pic_src去images里找图片, 转换为base64
                 let pic_src = obj.pic_src;
-                let pic = fs.readFileSync(`main/images/default_src.png`);
+                let pic = fs.readFileSync(`${serverAddress}/images/default_src.png`);
                 try {
-                    pic = fs.readFileSync(`main/images/${pic_src}.png`);
+                    pic = fs.readFileSync(`${serverAddress}/images/${pic_src}.png`);
                 } catch (e) {
                     console.warn(`File ${pic_src} not found, use default image`);
                 }
