@@ -1,0 +1,47 @@
+.that-3d-word {
+    z-index: 1;
+    transform-style: preserve-3d;
+    position: relative;
+    margin: 0;
+    padding: 0;
+    display: inline-block;
+}
+
+.that-3d-word.safari {
+    --increment-factor: 0.5;
+}
+
+.that-3d-word .that-3d-letter {
+    --inc: calc( var(--increment, 0.01em) * var(--increment-factor, 1));
+    --layer-space: calc(var(--depth, 30) / var(--layers));
+    --zStack: calc( (var(--layer) * var(--layer-space)) * var(--inc, 0.01em));
+    --xPositionOffset: 50%;
+    --yPositionOffset: 50%;
+    --zPositionOffset: calc( var(--inc, 0.01em) * ((var(--depth, 30) * 0.5) * var(--centerOffset)));
+    transform-style: flat;
+    position: relative;
+    color: var(--color, currentcolor);
+    backface-visibility: visible;
+    transform: translateX(calc( (var(--x, 0) + var(--xOffset, 0)) * var(--inc, 0.01em))) translateY(calc( (var(--y, 0) + var(--yOffset, 0)) * var(--inc, 0.01em))) translateZ(calc( ( (var(--z, 0) - (var(--depth, 30) * 0.5)) * var(--inc, 0.01em)) + var(--zStack))) rotateZ(calc(var(--rotateZ, 0) * 1deg)) rotateY(calc(var(--rotateY, 0) * 1deg)) rotateX(calc(var(--rotateX, 0) * 1deg));
+    transform-origin: var(--xPositionOffset) var(--yPositionOffset) var(--zPositionOffset);
+}
+
+.that-3d-word .that-3d-letter.front {
+    color: var(--color-front, var(--color, currentcolor));
+    display: inline-block;
+}
+
+.that-3d-word .that-3d-letter.under {
+    position: absolute;
+    top: calc(var(--yPos, 0) * 1px);
+    left: calc(var(--xPos, 0) * 1px);
+    pointer-events: none;
+    user-select: none;
+    display: inline-block;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.that-3d-word .that-3d-letter.back {
+    color: var(--color-back, var(--color, currentcolor));
+}
