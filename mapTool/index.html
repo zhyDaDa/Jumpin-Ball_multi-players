@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正方形阵列</title>
+    <style>
+        .flex-container {
+            display: flex;
+            flex-direction: row;
+        }
+        
+        .flex-item {
+            background-color: #ddd;
+            height: 18px;
+            width: 18px;
+            font-size: 8px;
+            border: 1px solid #666;
+            border-radius: 2px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .flex-item:hover {
+            box-shadow: 1px 1px 3px 1px #888888;
+            z-index: 20;
+            transform: scale(1.1);
+        }
+        
+        .pannel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center
+        }
+        
+        .pannel div {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .choice {
+            width: 15px;
+            height: 15px;
+            display: block;
+        }
+        
+        .choice {
+            width: 20px;
+            height: 20px;
+            appearance: none;
+            -webkit-appearance: none;
+            outline: none;
+            position: relative;
+        }
+        
+        .choice+label {
+            display: inline-block;
+            width: 30px;
+            height: 20px;
+            border: 1px solid #7d7d7d;
+            margin: 0 10px;
+            text-align: center;
+        }
+        
+        .choice:before {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 1px solid #7d7d7d;
+            display: inline-block;
+            border-radius: 50%;
+            vertical-align: middle;
+        }
+        
+        .choice:checked:before {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 1px solid red;
+            background: red;
+            display: inline-block;
+            border-radius: 50%;
+            vertical-align: middle;
+        }
+        
+        .choice:checked:after {
+            content: '';
+            width: 10px;
+            height: 5px;
+            border: 2px solid white;
+            border-top: transparent;
+            border-right: transparent;
+            text-align: center;
+            display: block;
+            position: absolute;
+            top: 6px;
+            left: 5px;
+            transform: rotate(-45deg);
+        }
+        
+        .choice:checked+label {
+            box-shadow: #333 0 0 0 0.3em;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="pannel">
+        <!-- 
+            "0": { "id": 0, "colour": "#00000000", "solid": 0 },
+            "1": { "id": 1, "colour": "#12aaf8", "solid": 0, "friction": { "x": 0.01, "y": 0.01 } },
+            "2": { "id": 2, "colour": "#046292", "solid": 1, "bounce": 0.2, "friction": { "x": 0.6, "y": 0.6 } },
+            "3": { "id": 3, "colour": "#405756", "solid": 1, "bounce": 0.2 },
+            "5": { "id": 5, "colour": "#E373FA", "solid": 1, "bounce": 1.1, "friction": { "x": 2, "y": 2 } },
+            "6": { "id": 6, "colour": "#666", "solid": 1, "bounce": 0, "friction": { "x": 0.2, "y": 0.2 } },
+            "7": { "id": 7, "colour": "#aaa", "solid": 1, "bounce": 0, "friction": { "x": 1, "y": 1 } },
+            "8": { "id": 8, "colour": "#ccc", "solid": 1, "bounce": 0, "friction": { "x": 1.2, "y": 1.2 }, "jump": 1 }, -->
+        <div>
+            <input name="choice" class="choice" type="radio" checked></input>
+            <label for="choice" style="background-color: #00000000;">0</label></div>
+        <div><input name="choice" class="choice" type="radio"></input>
+            <label for="choice" style="background-color: #12aaf8;">1</label></div>
+        <div><input name="choice" class="choice" type="radio"></input>
+            <label for="choice" style="background-color: #046292;">2</label></div>
+        <div><input name="choice" class="choice" type="radio"></input>
+            <label for="choice" style="background-color: #405756;">3</label></div>
+        <div><input name="choice" class="choice" type="radio"></input>
+            <label for="choice" style="background-color: #E373FA;">5</label></div>
+        <div><input name="choice" class="choice" type="radio"></input>
+            <label for="choice" style="background-color: #666;">6</label></div>
+        <div><input name="choice" class="choice" type="radio"></input>
+            <label for="choice" style="background-color: #aaa;">7</label></div>
+        <div><input name="choice" class="choice" type="radio"></input>
+            <label for="choice" style="background-color: #ccc;">8</label></div>
+
+
+    </div>
+    <hr>
+    <div class="container">
+
+    </div>
+
+    <hr>
+    <button id="export">导出</button>
+    <div>
+        <textarea name="" id="json" style="width: 90vw; height: 60vh"></textarea>
+    </div>
+    <hr>
+    <button id="import">导入</button>
+    <div>
+        <textarea name="" id="import_json" style="width: 90vw; height: 60vh"></textarea>
+    </div>
+    <script>
+        //const n = prompt("请输入行数：");
+        //const m = prompt("请输入列数：");
+        const createNewMap = (n, m) => {
+            const container = document.querySelector(".container");
+            for (let i = 0; i < n; i++) {
+                let h = `<div class="flex-container">`;
+                for (let j = 0; j < m; j++) {
+                    h += `<div class="flex-item">0</div>`;
+                }
+                h += `</div>`;
+                container.innerHTML += h;
+            }
+        }
+        colorMap = {
+            "0": "#00000000",
+            "1": "#12aaf8",
+            "2": "#046292",
+            "3": "#405756",
+            "5": "#E373FA",
+            "6": "#666",
+            "7": "#aaa",
+            "8": "#ccc",
+        }
+    </script>
+    <script>
+        const getColorAndNum = () => {
+            // 找到choice为checked的dom
+            const choice = document.querySelector(".choice:checked");
+            // 找到对应的label
+            const label = choice.nextElementSibling;
+            // 获取label的innerHTML
+            return {
+                color: label.style.backgroundColor,
+                num: label.innerHTML
+            };
+        }
+        const setTiles = () => {
+            const tiles = document.querySelectorAll(".flex-item");
+            // 为每个格子添加悬浮事件
+            tiles.forEach(tile => {
+                tile.addEventListener("mouseover", (e) => {
+                    if (mouse) {
+                        let obj = getColorAndNum();
+                        tile.style.backgroundColor = obj.color;
+                        tile.innerHTML = obj.num;
+                    }
+                });
+            });
+        }
+    </script>
+    <script>
+        // 按数字选中相应的颜色
+        document.onkeypress = (e) => {
+                let num = e.keyCode
+                if (48 <= num && num <= 57) {
+                    num -= 48;
+                } else if (96 <= num && num <= 105) {
+                    num -= 96;
+                } else {
+                    return;
+                }
+
+                let labels = document.querySelectorAll("label[for=choice]");
+                for (let i = 0; i < labels.length; i++) {
+                    let label = labels[i];
+                    if (label.innerHTML == num) {
+                        label.previousElementSibling.checked = true;
+                        break;
+                    }
+                }
+            }
+            // 阻止鼠标选中
+        document.querySelector(".container").onselectstart = new Function("event.returnValue=false;");
+
+        let mouse = false;
+        document.body.addEventListener("mousedown", (e) => {
+            mouse = true;
+        });
+        document.body.addEventListener("mouseup", (e) => {
+            mouse = false;
+        });
+    </script>
+    <script>
+        // 导出按钮
+        document.querySelector("#export").onclick = () => {
+            const rows = document.querySelectorAll(".flex-container");
+            let m = rows.length;
+            let n = rows[0].children.length;
+            let data = [];
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                let rowData = [];
+                let tiles = row.children;
+                for (let j = 0; j < tiles.length; j++) {
+                    let tile = tiles[j];
+                    let num = tile.innerHTML;
+                    rowData.push(num);
+                }
+                data.push(rowData);
+            }
+            // 对于data, 如果前后有整行的0, 就删除
+            let l, r;
+            for (let i = 0; i < data.length; i++) {
+                let row = data[i];
+                if (!row.every(e => e * 1 == 0)) {
+                    l = i;
+                    break;
+                }
+            }
+            for (let i = data.length - 1; i >= 0; i--) {
+                let row = data[i];
+                if (!row.every(e => e * 1 == 0)) {
+                    r = i;
+                    break;
+                }
+            }
+
+            data = data.slice(l, r + 1);
+
+            // 类似的, 压缩左右的全0纵列
+            for (let j = 0; j < m; j++) {
+                let col = data.map(row => row[j]);
+                if (!col.every(e => e * 1 == 0)) {
+                    l = j;
+                    break;
+                }
+            }
+            for (let j = m - 1; j >= 0; j--) {
+                let col = data.map(row => row[j]);
+                if (!col.every(e => e * 1 == 0)) {
+                    r = j;
+                    break;
+                }
+            }
+            data = data.map(row => row.slice(l, r + 1));
+
+
+            document.querySelector("#json").value = JSON.stringify(data).replaceAll("],", "],\n");
+        }
+    </script>
+    <script>
+        // 导入
+        document.querySelector("#import").onclick = () => {
+            let text = document.querySelector("#import_json").value;
+            try {
+                let data = JSON.parse(text);
+                let container = document.querySelector(".container");
+                container.innerHTML = "";
+
+                let padding = 8;
+                let m = data.length + 2 * padding;
+                let n = data[0].length + 2 * padding;
+
+                for (let i = 0; i < padding; i++) {
+                    let row1 = Array(data[0].length).fill(0);
+                    data.unshift(row1);
+                    let row2 = Array(data[0].length).fill(0);
+                    data.push(row2);
+                }
+
+                for (let i = 0; i < data.length; i++) {
+                    let row = data[i];
+                    for (let j = 0; j < padding; j++) {
+                        row.unshift(0);
+                        row.push(0);
+                    }
+                    let h = `<div class="flex-container">`;
+                    for (let j = 0; j < row.length; j++) {
+                        h +=
+                            `<div class="flex-item" style="background-color: ${colorMap[row[j]]};">${row[j]}</div>`;
+                    }
+                    h += `</div>`;
+                    container.innerHTML += h;
+                }
+
+                setTiles();
+            } catch (error) {
+                console.error(error);
+            }
+        }
+    </script>
+    <script>
+        createNewMap(60, 80);
+        setTiles();
+    </script>
+</body>
+
+</html>

@@ -28,6 +28,7 @@ const createConstants = (function() {
 const _enumConstants = [
     "BULLET_TYPE_NORMAL",
     "BULLET_TYPE_GOLD",
+    "BULLET_TYPE_SUPER",
     "BULLET_TYPE_EXPLOSIVE",
     "BULLET_TYPE_LASER",
     "SHAPE_CIRCLE",
@@ -143,6 +144,18 @@ class Bullet {
                 this.size = 18;
                 this.shape = enums.SHAPE_CIRCLE;
                 this.colour = "#ffd745";
+                this.acc = { x: 0, y: 0 };
+                // 由begin_point和end_point确定方向, 向量的模为speed
+                dx = this.end_point.x - this.begin_point.x;
+                dy = this.end_point.y - this.begin_point.y;
+                d = Math.sqrt(dx * dx + dy * dy);
+                this.vel.x += this.speed * dx / d;
+                this.vel.y += this.speed * dy / d;
+                break;
+            case enums.BULLET_TYPE_SUPER:
+                this.size = 24;
+                this.shape = enums.SHAPE_CIRCLE;
+                this.colour = "#e44d26";
                 this.acc = { x: 0, y: 0 };
                 // 由begin_point和end_point确定方向, 向量的模为speed
                 dx = this.end_point.x - this.begin_point.x;
@@ -1402,6 +1415,33 @@ wild_item2.pos.y = 7;
 wild_item2.delay = 120;
 wild_item2.ammo_max = 30;
 wild_item2.bullet_state.type = enums.BULLET_TYPE_GOLD;
+
+let wild_item3 = new Spade("gold fox XL", "gold fox", 0, 0, 1, 10, "yellow", "雪狐土豪金");
+wild_item3.state = enums.ITEM_STATE_WILD;
+itemDic[wild_item3.id] = wild_item3;
+wild_item3.pos.x = 40;
+wild_item3.pos.y = 0;
+wild_item3.delay = 60;
+wild_item3.ammo_max = 100;
+wild_item3.bullet_state.type = enums.BULLET_TYPE_GOLD;
+
+let wild_item4 = new Spade("Lunch Time!!!", "lunch time", 0, 0, 1, 10, "yellow", "雪狐土豪金");
+wild_item4.state = enums.ITEM_STATE_WILD;
+itemDic[wild_item4.id] = wild_item4;
+wild_item4.pos.x = 16;
+wild_item4.pos.y = -12;
+wild_item4.delay = 30;
+wild_item4.ammo_max = 120;
+wild_item4.bullet_state.type = enums.BULLET_TYPE_SUPER;
+
+let wild_item5 = new Spade("Lunch Time!!!", "lunch time", 0, 0, 1, 10, "yellow", "雪狐土豪金");
+wild_item5.state = enums.ITEM_STATE_WILD;
+itemDic[wild_item5.id] = wild_item5;
+wild_item5.pos.x = 52;
+wild_item5.pos.y = -8;
+wild_item5.delay = 30;
+wild_item5.ammo_max = 120;
+wild_item5.bullet_state.type = enums.BULLET_TYPE_SUPER;
 
 setInterval(() => {
     game.update();
