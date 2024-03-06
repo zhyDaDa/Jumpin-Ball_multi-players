@@ -8,17 +8,22 @@
     <!-- css -->
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/loadView.css">
+    <script src="js/anime.min.js"></script>
 </head>
 
 <body>
     <main>
         <div class="loadView">
-            <div id="centerBall" s>
+            <img class="logo" src="JumpinBallLogo.svg" alt="logo"></img>
+            <div id="centerBall">
                 <div></div>
+                <span class="circle circle-container">
+                    <span class="circle circle-dark-dashed"></span>
+                </span>
             </div>
-
+            <span class="circle circle-white"></span>
         </div>
-        <div>
+        <div class="line" id="line-container">
             <div class="shadow-line-container" id="shadow-line-container-1">
                 <div class="shadow-line" id="shadow-line-1"></div>
             </div>
@@ -31,21 +36,18 @@
         </section>
         <section id="nav">
             <nav>
-                <ul>
-                    <a href="#" class="link list">开始游戏</a>
+                <div id="ul">
+                    <a href="../game/index.html" class="link list">开始游戏</a>
                     <a href="#" class="link list">one</a>
                     <a href="#" class="link list">two</a>
                     <a href="#" class="link list">three</a>
                     <a href="#" class="link list">four</a>
-                </ul>
+                </div>
             </nav>
 
         </section>
-        <section id="logo" class="logo">
-            <img src="JumpinBallLogo.svg" alt="logo"></img>>
-        </section>
+        <script src="./js/loadView.js"></script>
     </main>
 </body>
-<script src="js/effect.js"></script>
 
 </html>
