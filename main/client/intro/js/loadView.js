@@ -47,7 +47,12 @@ anime.timeline({ loop: false })
         opacity: [1, 0],
         duration: 3600,
         easing: "easeOutExpo",
-    }, '-=4800');
+    }, '-=4800').add({
+        targets: 'section#news',
+        opacity: [0, 1],
+        duration: 1800,
+        easing: "easeOutExpo",
+    }, '-=1600');
 
 anime({
     targets: 'div.loadView .circle-dark-dashed',

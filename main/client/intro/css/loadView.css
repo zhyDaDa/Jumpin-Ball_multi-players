@@ -23,7 +23,7 @@ div.loadView>#centerBall {
     align-items: center;
     pointer-events: none;
     z-index: 1;
-    transition: 0.5s;
+    /* transition: 0.5s; */
 }
 
 div.loadView>#centerBall>div {
