@@ -35,14 +35,19 @@ anime.timeline({ loop: false })
         opacity: [0, 1],
         duration: 1200,
         easing: "easeOutExpo",
-        delay: anime.stagger(300, { start: -50 })
+        delay: anime.stagger(300, { start: 50 })
     }, '-=550').add({
         targets: 'div.loadView .bang',
         scale: [0, 1],
         rotateZ: [45, 15],
         duration: 1200,
         offset: '-=1000'
-    });
+    }, '-=1000').add({
+        targets: '#inner-mask',
+        opacity: [1, 0],
+        duration: 3600,
+        easing: "easeOutExpo",
+    }, '-=4800');
 
 anime({
     targets: 'div.loadView .circle-dark-dashed',

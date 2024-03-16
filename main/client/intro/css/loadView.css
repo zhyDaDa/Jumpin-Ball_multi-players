@@ -15,8 +15,8 @@ div.loadView {
 div.loadView>#centerBall {
     top: calc(50%-100vmin);
     left: calc(50%-100vmin);
-    width: 200vmin;
-    height: 200vmin;
+    width: 216vmin;
+    height: 216vmin;
     position: absolute;
     display: flex;
     justify-content: center;

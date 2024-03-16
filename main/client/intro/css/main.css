@@ -15,13 +15,14 @@
     background-color: #012e45;
 }
 
-#bg>img {
-    opacity: .5;
+#inner-mask {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+    background-color: #012e45;
 }
 
 
@@ -29,7 +30,7 @@
 
 #nav>nav {
     position: absolute;
-    top: calc(50vh + 2%);
+    top: calc(50vh + 3%);
     left: -10%;
     display: flex;
     justify-content: center;
@@ -73,6 +74,7 @@ a {
     display: block;
     text-transform: capitalize;
     /* transition: 0.5s; */
+    text-indent: -8vw;
 }
 
 a:hover {
