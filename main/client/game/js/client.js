@@ -159,6 +159,7 @@ var Game = function() {
         space: false,
         dash: false,
         pick: false,
+        drop: false,
         reload: false,
         switch: false,
         mouse_l: false,
@@ -266,6 +267,9 @@ Game.prototype.keydown = function(e) {
         case 69: //e
             _this.key.pick = true;
             break;
+        case 71: //g
+            _this.key.drop = true;
+            break;
         case 82: //r
             _this.key.reload = true;
             break;
@@ -320,6 +324,9 @@ Game.prototype.keyup = function(e) {
             break;
         case 69: //e
             _this.key.pick = false;
+            break;
+        case 71: //g
+            _this.key.drop = false;
             break;
         case 82: //r
             _this.key.reload = false;

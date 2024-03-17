@@ -256,9 +256,14 @@ class Item {
      * @param {Chara} chara
      */
     updateBelonger(chara) {
-        this.belongerIp = chara.ip;
-        this.pos = deepCopy(chara.loc);
-        this.state = enums.ITEM_STATE_EQUIPPED;
+        if (chara) {
+            this.belongerIp = chara.ip;
+            // this.pos = deepCopy(chara.loc);
+            this.state = enums.ITEM_STATE_EQUIPPED;
+        } else {
+            this.belongerIp = "";
+            this.state = enums.ITEM_STATE_WILD;
+        }
     }
 }
 
@@ -521,6 +526,40 @@ class Chara {
         // }
         item.updateBelonger(this);
     }
+
+    /**
+     * 角色丢弃物品
+     * @param {Item} item
+     */
+    dropItem(item) {
+        item.pos = deepCopy(this.loc);
+        item.pos.x /= game.maps[this.current_mapId].tile_size;
+        item.pos.y /= game.maps[this.current_mapId].tile_size;
+        item.updateBelonger();
+
+        // 从装备中删除
+        switch (item.type) {
+            case enums.ITEM_TYPE_SPADE:
+                let i = this.equipment.spade.indexOf(item);
+                if (i > -1) this.equipment.spade.splice(i, 1);
+                break;
+            case enums.ITEM_TYPE_CLUB:
+                let j = this.equipment.club.indexOf(item);
+                if (j > -1) this.equipment.club.splice(j, 1);
+                break;
+            case enums.ITEM_TYPE_HEART:
+                let k = this.equipment.heart.indexOf(item);
+                if (k > -1) this.equipment.heart.splice(k, 1);
+                break;
+            case enums.ITEM_TYPE_DIAMOND:
+                let l = this.equipment.diamond.indexOf(item);
+                if (l > -1) this.equipment.diamond.splice(l, 1);
+                break;
+            default:
+                break;
+        }
+
+    }
 }
 
 /**
@@ -544,6 +583,7 @@ class Player {
             space: false,
             dash: false,
             pick: false,
+            drop: false,
             reload: false,
             switch: false,
             mouse_l: false,
@@ -604,25 +644,27 @@ wss.on('connection', function(ws) {
 
     // div: 在playerDic中记录
     let ip = ws._socket.remoteAddress;
-    playerDic[ip] = new Player();
-    playerDic[ip].ws = ws;
-    playerDic[ip].chara.ip = ip;
+    if (playerDic[ip] === undefined) {
+        playerDic[ip] = new Player();
+        playerDic[ip].ws = ws;
+        playerDic[ip].chara.ip = ip;
 
-    playerDic[ip].chara.name = ip + "";
-    playerDic[ip].chara.loc.x = game.maps[playerDic[ip].chara.current_mapId].player.x;
-    playerDic[ip].chara.loc.y = game.maps[playerDic[ip].chara.current_mapId].player.y;
-
-    (function() {
-        // 根据ip生成一个hash值, 然后根据hash值生成一个随机的颜色
-        let hash = 0;
-        for (let i = 0; i < ip.length; i++) {
-            hash = ip.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        let colour = '#';
-        // hash值模FFFFFF, 然后转换成16进制
-        colour += ('000000' + (hash % 0xFFFFFF).toString(16)).slice(-6);
-        playerDic[ip].chara.colour = colour;
-    })();
+        playerDic[ip].chara.name = ip + "";
+        playerDic[ip].chara.current_mapId = 0;
+        playerDic[ip].chara.loc.x = game.maps[playerDic[ip].chara.current_mapId].player.x;
+        playerDic[ip].chara.loc.y = game.maps[playerDic[ip].chara.current_mapId].player.y;
+        (function() {
+            // 根据ip生成一个hash值, 然后根据hash值生成一个随机的颜色
+            let hash = 0;
+            for (let i = 0; i < ip.length; i++) {
+                hash = ip.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            let colour = '#';
+            // hash值模FFFFFF, 然后转换成16进制
+            colour += ('000000' + (hash % 0xFFFFFF).toString(16)).slice(-6);
+            playerDic[ip].chara.colour = colour;
+        })();
+    }
 
     // 为其设置监听
     ws.on('message', function(message) {
@@ -643,7 +685,7 @@ wss.on('connection', function(ws) {
     ws.on('close', function() {
         console.log(`client ${ws._socket.remoteAddress} disconnected`);
         // 删除playerDic中的数据
-        delete playerDic[ip];
+        // delete playerDic[ip];
     });
 });
 
@@ -896,11 +938,15 @@ class GAME {
         }
 
         if (player.chara.state.hp <= 0) {
+            // 玩家状态由normal变为dead, 视为死亡
             player.chara.state.hp = 0;
             player.chara.state.condtion = "dead";
             player.chara.state.timer_end = this.maps[player.chara.current_mapId].reviveCooldown + new Date().getTime();
             player.chara.state.timer_begin = new Date().getTime();
             player.chara.state.timer_current = new Date().getTime();
+
+            // 死亡掉落
+            player.chara.dropItem(player.chara.equipment.spade[0]);
             return;
         }
 
@@ -1007,7 +1053,7 @@ class GAME {
 
         /* float技能处理 */
         // TODO: 还有一些问题, 有空再处理
-        if (player.chara.float_ability && player.chara.can_float && player.key.pick == true) {
+        if (player.chara.float_ability && player.chara.can_float && player.key.float == true) {
             for (let p = -3; p < 3; p++) {
                 for (let q = -2; q < 4; q++) {
                     let localTile = get_tile(t_x_left + q, t_y_up + p);
@@ -1271,6 +1317,15 @@ class GAME {
             });
             player.pick_switch = true;
         } else if (!player.key.pick) player.pick_switch = false;
+        // 掉落
+        if (!player.drop_switch && player.key.drop) {
+            // 掉落道具
+            let item = player.chara.equipment.spade[0];
+            if (item) {
+                player.chara.dropItem(item);
+            }
+            player.drop_switch = true;
+        } else if (!player.key.drop) player.drop_switch = false;
         // 切换武器
         if (!player.switch_switch && player.key.switch) {
             if (player.chara.equipment.spade.length > 1) {
