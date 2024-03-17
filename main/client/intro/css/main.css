@@ -1,0 +1,110 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+#bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -999;
+    background-color: #012e45;
+}
+
+#inner-mask {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+    background-color: #012e45;
+}
+
+
+/* nav */
+
+#nav>nav {
+    position: absolute;
+    top: calc(50vh + 3%);
+    left: -10%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 45vh;
+    width: 64vw;
+    /* border: #fff 1px solid; */
+    transform: skew(0deg, 12deg) translateY(-90%);
+    /* box-shadow: rgb(9 9 39 / 74%) -60px 50px 30px 10px; */
+}
+
+nav>#ul {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    list-style: none;
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    flex-direction: column;
+    /* transition: 0.36s; */
+}
+
+nav>#ul a {
+    width: 0%;
+    opacity: 0;
+    height: 10vmin;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* transition: 0.5s; */
+    color: rgb(255, 255, 255);
+    border: 0.10000000000000142px solid #ffd9d999;
+    margin: 1vmin;
+}
+
+a {
+    text-decoration: none;
+    color: white;
+    font-size: 1.3rem;
+    display: block;
+    text-transform: capitalize;
+    /* transition: 0.5s; */
+    text-indent: -8vw;
+}
+
+a:hover {
+    transition: 0.5s;
+    z-index: 20;
+}
+
+nav>#ul a:hover {
+    background: rgba(0, 221, 255, 0.938);
+    position: relative;
+    bottom: 10px;
+    color: rgb(43, 31, 214);
+    box-shadow: -14px 20px 30px 5px rgba(18, 208, 233, 0.867);
+    transition: .5s;
+    z-index: 20;
+}
+
+section#news {
+    position: fixed;
+    top: calc(100vh - 48vh);
+    left: calc(100vw - 24vw);
+    height: 40vh;
+    width: 20vw;
+    padding: 5vmin;
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    flex-direction: column;
+    z-index: 999;
+    background: #66666699;
+    color: ghostwhite;
+    pointer-events: none;
+}

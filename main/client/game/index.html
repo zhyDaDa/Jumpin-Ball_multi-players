@@ -16,7 +16,7 @@
             <p id="renderDelay">渲染延迟: <span class="renderDelay"></span>ms</p>
             <p id="fps">FPS: <span class="fps"></span></p>
         </div>
-        <div id="tipBoard" style="display: none;">
+        <div id="tipBoard" style="display: block;">
             <h6 id="h6_1">
                 <form action="javascript:void(0);" id="addressForm">
                     <input type="text" name="joinServerIP" id="joinServerIP" placeholder="输入服务器地址" />
@@ -92,6 +92,10 @@
                 tipBoard.setAttribute("style", "display:" + (tipBoard.style.display == "block" ? "none" :
                     "block"));
             }
+            window.setTimeout(() => {
+                let tipBoard = document.getElementById("tipBoard");
+                tipBoard.style.display = "none";
+            }, 4800);
             $('#addressForm').on('submit', function(e) {
                 e.preventDefault();
                 let data = document.querySelector('#addressForm').joinServerIP.value;
