@@ -24,6 +24,12 @@ anime.timeline({ loop: false })
         duration: 1200,
         offset: '-=550'
     }, '-=550').add({
+        targets: 'div.loadView .bang',
+        scale: [0, 1],
+        rotateZ: [45, 8],
+        duration: 1000,
+        offset: '-=1000'
+    }, '-=1000').add({
         targets: '#line-container',
         scale: [2, 1],
         easing: "easeOutExpo",
@@ -37,12 +43,6 @@ anime.timeline({ loop: false })
         easing: "easeOutExpo",
         delay: anime.stagger(300, { start: 50 })
     }, '-=550').add({
-        targets: 'div.loadView .bang',
-        scale: [0, 1],
-        rotateZ: [45, 15],
-        duration: 1200,
-        offset: '-=1000'
-    }, '-=1000').add({
         targets: '#inner-mask',
         opacity: [1, 0],
         duration: 3600,
@@ -64,6 +64,7 @@ anime({
 
 const centerBall = document.querySelector('#centerBall');
 const logo = document.querySelector('img.logo');
+const bang = document.querySelector('img.bang');
 
 
 document.addEventListener('mousemove', e => {
@@ -77,5 +78,7 @@ document.addEventListener('mousemove', e => {
     const dy = (y - vh) * d;
     centerBall.style.transform = `translate(${dx}px, ${dy}px)`;
     logo.style.top = `${dy/3}px`;
-    logo.style.left = `${dx/3}px`;
+    logo.style.left = `${dx / 3}px`;
+    bang.style.top = `${dy / 3}px`;
+    bang.style.left = `${dx / 3}px`;
 });
