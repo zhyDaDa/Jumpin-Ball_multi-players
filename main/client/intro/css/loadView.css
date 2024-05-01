@@ -74,6 +74,16 @@ div.loadView>#centerBall>div {
     z-index: 999;
 }
 
+.loadView img.bang {
+    position: absolute;
+    width: calc(20%);
+    height: calc(20%);
+    z-index: 1000;
+    /* margin-top: 15%;
+    margin-right: 20%; */
+    margin: 15% 0 0% 68%;
+}
+
 @keyframes bound {
     0% {
         transform: translateY(-100vh);
