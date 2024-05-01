@@ -55,6 +55,31 @@ const _enumConstants = [
  */
 const enums = createConstants(..._enumConstants);
 
+const deepCopy = function(source, kaiguan) {
+    let result = {};
+    if (kaiguan == 1) result = [];
+    for (let key in source) {
+        if (Object.prototype.toString.call(source[key]) === '[object Object]') {
+            result[key] = deepCopy(source[key])
+        }
+        if (Object.prototype.toString.call(source[key]) === '[object Array]') {
+            result[key] = deepCopy(source[key], 1)
+        } else {
+            result[key] = source[key]
+        }
+    }
+    return result;
+}
+
+/**
+ * 获得两个{x,y}之间的距离
+ * @param {{x:Number, y:Number}} A
+ * @param {{x:Number, y:Number}} B
+ * @returns {Number}
+ */
+const getDistance = function(A, B) {
+    return Math.sqrt(Math.pow(A.x - B.x, 2) + Math.pow(A.y - B.y, 2));
+}
 
 /**
  * @class Bullet

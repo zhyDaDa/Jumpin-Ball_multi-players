@@ -92,8 +92,8 @@ function pullSever(data) {
     switch (data.type) {
         case "game":
             // TODO: 判断players[0]和自己差别有多大, 如果太大, 使用服务器端的数据, 还有map
-            data.players[0] = game.player;
-            game.update_situation(data.players, data.items);
+            data.data.players[0] = game.player;
+            game.update_situation(data.data.players, data.data.items);
 
             // 更新leaderBoard
             game.update_leaderBoard(data.players);
@@ -102,22 +102,33 @@ function pullSever(data) {
             engine.load_map(data.data);
             break;
         case "pic":
-            picDic[data.pic_src] = data.base64;
+            picDic[data.data.pic_src] = data.data.base64;
+            break;
+        case "time":
+            pushServer("time", ({
+                time: data.data.time
+            }));
+            document.querySelectorAll(".serverDelay").forEach(el => el.innerText = Number(data.data.latency).toFixed(2));
             break;
     }
 }
 
-
 /** 
  * 向服务器发送数据
- * @param {"player"} type  发送的数据类型
+ * @param {"player" | "time"} type  发送的数据类型
  * @param {Object} data  发送的数据
  */
 function pushServer(type, data) {
     switch (type) {
         case "player":
-            socket.send(JSON.stringify({
+            window.socket.send(JSON.stringify({
                 type: "player",
+                data: data
+            }));
+            break;
+        case "time":
+            window.socket_file.send(JSON.stringify({
+                type: "time",
                 data: data
             }));
             break;

@@ -45,6 +45,9 @@ const _enumConstants = [
 const enums = createConstants(..._enumConstants);
 
 
+const timeCheckInterval = 1000;
+const timeCheckBufferSize = 12;
+
 const { time, debug } = require('console');
 const fs = require('fs');
 const WebSocketServer = require('ws').Server;
@@ -593,6 +596,7 @@ class Player {
             mouseY: 0,
         };
         this.chara = new Chara();
+        this.bullets = [];
         this.ws = undefined;
         this.isRobo = false;
         this.time = 0;
@@ -609,11 +613,6 @@ class Player {
 const playerDic = {
     /** @member {Player} */
 };
-/**
- * 字典: mapId -> [Bullet]
- * @type {Array<Array<Bullet>}
- */
-const bulletDic = [];
 /**
  * @typedef {Object} itemDic
  * @property {Item} [value] - 值
@@ -642,7 +641,19 @@ wss.on('connection', function(ws) {
 
     console.log(`client ${ws._socket.remoteAddress} connected`);
 
-    // div: 在playerDic中记录
+    // 设置延迟测速
+    ws.timeCheckInterval = setInterval(() => {
+        ws.send(JSON.stringify({
+            type: "time",
+            data: {
+                time: new Date().getTime(),
+                latency: playerDic[ws._socket.remoteAddress].latency
+            }
+        }));
+    }, timeCheckInterval);
+    ws.timeCheckBuffer = new Array(timeCheckBufferSize).fill(0);
+
+    // 在playerDic中记录
     let ip = ws._socket.remoteAddress;
     if (playerDic[ip] === undefined) {
         playerDic[ip] = new Player();
@@ -666,26 +677,38 @@ wss.on('connection', function(ws) {
         })();
     }
 
+    // TODO: 发送图片和地图数据
+
+
     // 为其设置监听
     ws.on('message', function(message) {
-        // console.log("收到消息了");
         // 获得消息来源的ip和端口号
         let ip = ws._socket.remoteAddress;
-        // console.log("Received: " + message + " from " + ip);
-        data = JSON.parse(message);
-        // 更新玩家字典中的数据
-        playerDic[ip].key = deepCopy(data.key);
-        if (data.name)
-            playerDic[ip].chara.name = data.name;
-        if (data.color)
-            playerDic[ip].chara.colour = data.color;
+        // 获得数据
+        let data = JSON.parse(message);
+
+        switch (data.type) {
+            case "player":
+                // 更新player的数据
+                data.data.ws = ws;
+                playerDic[ip] = data.data;
+                break;
+            case "time":
+                let delta = new Date().getTime() - data.data.time;
+                ws.timeCheckBuffer[Math.trunc(data.data.time / timeCheckInterval) % timeCheckBufferSize] = delta;
+                // 更新latency
+                playerDic[ip].latency = ws.timeCheckBuffer.reduce((a, b) => a + b) / timeCheckBufferSize;
+                break;
+        }
+
     });
 
     // 链接关闭
     ws.on('close', function() {
         console.log(`client ${ws._socket.remoteAddress} disconnected`);
-        // 删除playerDic中的数据
-        // delete playerDic[ip];
+        // 去除playerDic中的ip
+        if (playerDic[ws._socket.remoteAddress])
+            delete playerDic[ws._socket.remoteAddress];
     });
 });
 
@@ -725,31 +748,7 @@ function sendAll(message) {
 }
 
 
-const deepCopy = function(source, kaiguan) {
-    let result = {};
-    if (kaiguan == 1) result = [];
-    for (let key in source) {
-        if (Object.prototype.toString.call(source[key]) === '[object Object]') {
-            result[key] = deepCopy(source[key])
-        }
-        if (Object.prototype.toString.call(source[key]) === '[object Array]') {
-            result[key] = deepCopy(source[key], 1)
-        } else {
-            result[key] = source[key]
-        }
-    }
-    return result;
-}
 
-/**
- * 获得两个{x,y}之间的距离
- * @param {{x:Number, y:Number}} A
- * @param {{x:Number, y:Number}} B
- * @returns {Number}
- */
-const getDistance = function(A, B) {
-    return Math.sqrt(Math.pow(A.x - B.x, 2) + Math.pow(A.y - B.y, 2));
-}
 
 
 /* div: 主游戏对象 */
@@ -1507,9 +1506,6 @@ const wss_file = new WebSocketServer({
     host: '0.0.0.0',
     port: 4320
 });
-
-let timeCheckInterval = 1000;
-let timeCheckBufferSize = 12;
 
 wss_file.on('connection', function(ws) {
     ws.timeCheckInterval = setInterval(() => {
