@@ -564,9 +564,9 @@ let verSplits = [0b001, 0b100, 0b010, 0b001];
 大包装均为`{"type": string, "data": any}`的形式
 
 1. **类型**: `"game"`, `data`包含当前玩家需要渲染的信息
-    - `map_id`: 地图id
     - `players`: 玩家信息数组
     - `items`: 物品信息数组
+    > 服务器传出的players第一个必定是玩家自己
 
 2. **类型**: `"map"`, `data`包含地图信息
     - `map_id`: 地图id

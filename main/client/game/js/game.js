@@ -1,3 +1,18 @@
+const defaultPlayerSize = 16;
+const defaultHitBoxSize = 16;
+const BGColor = '#333';
+const nameMaxLength = 15;
+const TRACER_LINE_WIDTH = 4;
+const HPBarColor = '#ff5555aa';
+const HPBarWidth = 30;
+const HPBarHeight = 4;
+const UI_BarColor_underlay = '#22222266';
+const UI_HPBarColor_front = '#02b05d';
+const UI_MPBarColor_front = '#19699f';
+const player_info_fontSize = 12;
+const cursor_size = 20;
+
+
 /**
  * @class Bullet
  * with movement
@@ -351,8 +366,8 @@ class Chara {
 
         this.name = "defaultPlayer";
         this.colour = "#FF9900";
-        this.size = defaultPlayerSize;
-        this.hitBoxSize = defaultHitBoxSize;
+        this.size = defaultPlayerSize || 16;
+        this.hitBoxSize = defaultHitBoxSize || 16;
         this.current_mapId = 0;
 
         this.can_jump = true;
@@ -1167,6 +1182,9 @@ class Game {
 
         this.current_map = null;
 
+        // 用于接收服务器的数据
+        this.players = [];
+        this.items = [];
 
         window.onkeydown = this.keydown.bind(this);
         window.onkeyup = this.keyup.bind(this);
@@ -1380,17 +1398,6 @@ class Game {
     }
 
     /* div: 渲染相关 */
-    BGColor = '#333';
-    nameMaxLength = 15;
-    TRACER_LINE_WIDTH = 4;
-    HPBarColor = '#ff5555aa';
-    HPBarWidth = 30;
-    HPBarHeight = 4;
-    UI_BarColor_underlay = '#22222266';
-    UI_HPBarColor_front = '#02b05d';
-    UI_MPBarColor_front = '#19699f';
-    player_info_fontSize = 12;
-    cursor_size = 20;
     draw_tile(x, y, tile, context) {
 
         if (!tile || !tile.colour) return;
@@ -1800,7 +1807,7 @@ class Game {
             }
         }
     }
-    draw(context, map_id, players, items, bullets) {
+    draw_all(context, map_id, players, items, bullets) {
         // 如果地图改变, 重新加载
         if (!this.current_map || map_id != this.current_map.mapId) this.load_map(map_id);
 
@@ -1836,16 +1843,27 @@ class Game {
         if (this.key.mouse_r) this.mouseRightShowInfo();
         else document.getElementById("info_alert").style.display = "none";
     }
+    draw(context) {
+        let bullets = [];
+        for (let p of this.players) {
+            bullets = bullets.concat(p.bullets);
+        }
+        this.draw_all(context, this.player.chara.current_mapId, this.players, this.items, this.player.bullets);
+    }
 
     /* 响应函数 */
     update() {
         engine.updateSelf();
     }
+    update_situation(players, items) {
+        this.players = players;
+        this.items = items;
+    }
     update_camera(target_x, target_y, direct) {
         // 相机位置是数据坐标位置
         var c_x = (target_x);
         var c_y = (target_y);
-        if (this.key.mouse_r) {
+        if (this.player.key.mouse_r) {
             let sightLevel = .2; // 视野越大, 能看的越远
             c_x = c_x * (1 - sightLevel) + this.key.mouseX * sightLevel;
             c_y = c_y * (1 - sightLevel) + this.key.mouseY * sightLevel;

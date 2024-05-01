@@ -93,8 +93,7 @@ function pullSever(data) {
         case "game":
             // TODO: 判断players[0]和自己差别有多大, 如果太大, 使用服务器端的数据, 还有map
             data.players[0] = game.player;
-            data.map_id = game.current_map.id;
-            game.draw(ctx, data.map_id, data.players, data.items);
+            game.update_situation(data.players, data.items);
 
             // 更新leaderBoard
             game.update_leaderBoard(data.players);
@@ -162,7 +161,7 @@ function setViewZoom(zoomIndex) {
     canvas.height = h / zoomIndex;
     game.set_viewport(canvas.width, canvas.height);
     // 防止camera瞬时偏移
-    game.update_camera(game.player.loc.x, game.player.loc.y, true);
+    game.update_camera(game.player.chara.loc.x, game.player.chara.loc.y, true);
 }
 setViewZoom(zoomIndex);
 
@@ -185,11 +184,14 @@ window.requestAnimFrame =
     };
 
 const Loop = function() {
-
+    // 清空画布
     ctx.fillStyle = game.current_map.background;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    game.update();
+    // 本地物理引擎计算
+    engine.updateSelf();
+    // 提交服务器
+    pushServer("player", game.player);
+    // 渲染
     game.draw(ctx);
 
     anim = window.requestAnimFrame(Loop);
