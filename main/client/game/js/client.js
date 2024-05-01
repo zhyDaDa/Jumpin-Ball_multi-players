@@ -1,14 +1,3 @@
-const BGColor = '#333';
-const nameMaxLength = 15;
-const TRACER_LINE_WIDTH = 4;
-const HPBarColor = '#ff5555aa';
-const HPBarWidth = 30;
-const HPBarHeight = 4;
-const UI_BarColor_underlay = '#22222266';
-const UI_HPBarColor_front = '#02b05d';
-const UI_MPBarColor_front = '#19699f';
-const player_info_fontSize = 12;
-const cursor_size = 20;
 const fpsBufferSize = 24;
 
 const tipBoard = document.getElementById("tipBoard");
@@ -41,28 +30,15 @@ function setServer(serverAddress) {
         console.log("成功连接到服务器");
         // alert("成功连接到服务器");
         document.querySelector("#h6_3").innerHTML = `<font color="green"> 成功连接到服务器 </font>`;
-        tellServer();
+
     };
     /* div: 接收消息 */
     socket.onmessage = function(e) {
         let data = JSON.parse(e.data);
-        // console.log(data);
         // 计算延迟
         let receiveTime = Date.now();
-        // let latency = receiveTime - data.time;
-        /*  let data = {
-                map_id: 0,
-                players: [],
-                items: [],
-                bullets: [],
-                time: new Date().getTime()
-            } 
-        */
-        game.player = deepCopy(data.players[0]);
-        game.draw(ctx, data.map_id, data.players, data.items, data.bullets);
 
-        // 更新leaderBoard
-        game.update_leaderBoard(data.players);
+        pullSever(data);
 
         // 更新延迟显示
         let renderLatency = Date.now() - receiveTime;
@@ -111,17 +87,44 @@ function setServer(serverAddress) {
     }
 }
 
-function tellServer() {
-    // 将canvas坐标转换为数据坐标
-    game.key.mouseX = game.mouse.x + game.camera.x;
-    game.key.mouseY = game.mouse.y + game.camera.y;
-    let message = JSON.stringify({
-        key: game.key,
-        color: playerColour,
-        name: playerName,
-    });
-    console.log(`发送给服务器: ${message}`);
-    socket.send(message);
+/** 从服务器获取数据 */
+function pullSever(data) {
+    switch (data.type) {
+        case "game":
+            // TODO: 判断players[0]和自己差别有多大, 如果太大, 使用服务器端的数据, 还有map
+            data.players[0] = game.player;
+            data.map_id = game.current_map.id;
+            game.draw(ctx, data.map_id, data.players, data.items);
+
+            // 更新leaderBoard
+            game.update_leaderBoard(data.players);
+            break;
+        case "map":
+            engine.load_map(data.data);
+            break;
+        case "pic":
+            picDic[data.pic_src] = data.base64;
+            break;
+    }
+}
+
+
+/** 
+ * 向服务器发送数据
+ * @param {"player"} type  发送的数据类型
+ * @param {Object} data  发送的数据
+ */
+function pushServer(type, data) {
+    switch (type) {
+        case "player":
+            socket.send(JSON.stringify({
+                type: "player",
+                data: data
+            }));
+            break;
+        default:
+            break;
+    }
 }
 
 /* div: html前端杂货 */
@@ -139,12 +142,17 @@ function setPlayerName(name) {
     tellServer();
 }
 
-/* div: 定义和main函数 */
+/* div: 游戏初始化 */
 
 const canvas = document.getElementById('canvas'),
     ctx = canvas.getContext('2d');
 
+const engine = new Engine();
 const game = new Game();
+
+const thisPlayer = new Player();
+
+
 
 // 获取窗口宽高, 并设置canvas的大小
 function setViewZoom(zoomIndex) {
@@ -158,15 +166,14 @@ function setViewZoom(zoomIndex) {
 }
 setViewZoom(zoomIndex);
 
-game.pauseFlag = false;
-let anim;
-
 /* 将viewport限制在地图的范围内*/
 game.limit_viewport = false;
 /* camera开始移动的距离差 */
 game.camer_movement_limit = { x: 10, y: 8 };
 
 
+game.pauseFlag = false;
+let anim;
 window.requestAnimFrame =
     window.requestAnimationFrame ||
     window.webkitRequestAnimationFrame ||
@@ -185,9 +192,7 @@ const Loop = function() {
     game.update();
     game.draw(ctx);
 
-    trapClock++;
-
     anim = window.requestAnimFrame(Loop);
 };
 
-// Loop();
+Loop();
