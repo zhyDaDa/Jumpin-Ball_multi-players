@@ -554,7 +554,6 @@ class Player {
  * 物理引擎
  */
 class Engine {
-    picDic = {};
     constructor() {
         this.alert_errors = false;
         this.log_info = true;
