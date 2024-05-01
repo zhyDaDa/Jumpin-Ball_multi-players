@@ -554,11 +554,16 @@ class Player {
  * 物理引擎
  */
 class Engine {
+    picDic = {};
     constructor() {
         this.alert_errors = false;
         this.log_info = true;
         this.tile_size = 16;
         this.maps = [];
+    }
+
+    load_map(mapData) {
+        this.maps[mapData.map_id] = mapData.map;
     }
 
     get_tile_from_mapId(mapId) {
@@ -1326,10 +1331,6 @@ class Game {
                 break;
         }
     }
-    load_map(map_id) {
-        // 从服务器加载地图 #TODO: 改用pull方法
-        socket_file.send(JSON.stringify({ type: "map", map_id: map_id }));
-    }
     set_map(map) {
         if (typeof map === 'undefined' ||
             typeof map.data === 'undefined' ||
@@ -1378,6 +1379,19 @@ class Game {
 
         return (this.current_map.data[y] && this.current_map.data[y][x]) ? deepCopy(this.current_map.data[y][x]) : 0;
     }
+
+    /* div: 渲染相关 */
+    BGColor = '#333';
+    nameMaxLength = 15;
+    TRACER_LINE_WIDTH = 4;
+    HPBarColor = '#ff5555aa';
+    HPBarWidth = 30;
+    HPBarHeight = 4;
+    UI_BarColor_underlay = '#22222266';
+    UI_HPBarColor_front = '#02b05d';
+    UI_MPBarColor_front = '#19699f';
+    player_info_fontSize = 12;
+    cursor_size = 20;
     draw_tile(x, y, tile, context) {
 
         if (!tile || !tile.colour) return;
@@ -1444,8 +1458,6 @@ class Game {
             let drawHeight = img.height * scale;
             context.drawImage(img, x - drawWidth / 2, y - drawHeight / 2, drawWidth, drawHeight);
         } else {
-            // 请求图片 #TODO: 改用pull方法
-            socket_file.send(JSON.stringify({ type: "item_pic", pic_src: item.pic_src }));
             // 绘制默认图片
             context.fillStyle = "#00000066";
             context.fillRect(x, y, this.tile_size / 2, this.tile_size / 2);
@@ -1551,97 +1563,6 @@ class Game {
             span * player.state.hp / player.state.hp_max,
             HPBarHeight);
         context.closePath();
-    }
-    update() {
-        engine.updateSelf();
-    }
-    update_camera(target_x, target_y, direct) {
-        // 相机位置是数据坐标位置
-        var c_x = (target_x);
-        var c_y = (target_y);
-        if (this.key.mouse_r) {
-            let sightLevel = .2; // 视野越大, 能看的越远
-            c_x = c_x * (1 - sightLevel) + this.key.mouseX * sightLevel;
-            c_y = c_y * (1 - sightLevel) + this.key.mouseY * sightLevel;
-        }
-        // 平移到屏幕正中间
-        c_x -= this.viewport.x / 2;
-        c_y -= this.viewport.y / 2;
-
-        var x_dif = Math.abs(c_x - this.camera.x);
-        var y_dif = Math.abs(c_y - this.camera.y);
-
-        if (direct) {
-            this.camera.x = c_x;
-            this.camera.y = c_y;
-            return;
-        }
-
-        if (x_dif > this.camera_movement_limit.x) {
-
-            var mag = Math.round(Math.max(1, x_dif * 0.1));
-
-            if (c_x != this.camera.x) {
-
-                this.camera.x += c_x > this.camera.x ? mag : -mag;
-
-                if (this.limit_viewport) {
-
-                    this.camera.x =
-                        Math.min(
-                            this.current_map.width_p - this.viewport.x + this.tile_size,
-                            this.camera.x
-                        );
-
-                    this.camera.x =
-                        Math.max(
-                            0,
-                            this.camera.x
-                        );
-                }
-            }
-        }
-
-        if (y_dif > this.camera_movement_limit.y) {
-
-            var mag = Math.round(Math.max(1, y_dif * 0.1));
-
-            if (c_y != this.camera.y) {
-
-                this.camera.y += c_y > this.camera.y ? mag : -mag;
-
-                if (this.limit_viewport) {
-
-                    this.camera.y =
-                        Math.min(
-                            this.current_map.height_p - this.viewport.y + this.tile_size,
-                            this.camera.y
-                        );
-
-                    this.camera.y =
-                        Math.max(
-                            0,
-                            this.camera.y
-                        );
-                }
-            }
-        }
-    }
-    update_leaderBoard(players) {
-        // 更新leaderBoard
-        let leaderBoard = document.getElementById("leaderBoard");
-        let leaderHTML = "";
-        // 排序
-        players.sort((a, b) => b.state.hp - a.state.hp);
-        for (let player of players) {
-            leaderHTML += `
-        <tr>
-            <td>${player.name}</td>
-            <td>${player.state.hp}</td>
-        </tr>
-        `;
-        }
-        leaderBoard.innerHTML = leaderHTML;
     }
     draw_cursor(context) {
         const _this = (this);
@@ -1880,28 +1801,6 @@ class Game {
             }
         }
     }
-    mouseRightShowInfo() {
-            // 从canvas坐标转换为数据坐标
-            let x = this.key.mouseX + this.tile_size / 2;
-            let y = this.key.mouseY + this.tile_size / 2;
-            let tile_x = Math.floor(x / this.tile_size);
-            let tile_y = Math.floor(y / this.tile_size);
-
-            // 获取该tile的信息
-            let tile = this.get_tile(tile_x, tile_y);
-
-            // 展示
-            let info_alert = document.querySelector("#info_alert");
-            info_alert.style.display = "block";
-
-            info_alert.innerHTML = `
-            <span>
-                砖块id: ${tile.id}; ${tile.solid ? "实心" : "空心"}${tile.bounce ? `; 弹力: ${tile.bounce}` : ""}${tile.friction ? `; 摩擦: {${tile.friction.x},${tile.friction.x}}` : ""}${tile.jump ? "; 可抓墙跳" : ""}
-                <br>
-                mouse: {x:${this.mouse.x.toFixed(1)}, y:${this.mouse.y.toFixed(1)}}; key: {x:${this.key.mouseX.toFixed(1)}, y:${this.key.mouseY.toFixed(1)}}; tile: {x:${tile_x}, y:${tile_y}}
-            </span>`;
-
-    }
     draw(context, map_id, players, items, bullets) {
         // 如果地图改变, 重新加载
         if (!this.current_map || map_id != this.current_map.mapId) this.load_map(map_id);
@@ -1937,5 +1836,119 @@ class Game {
         // 若右键按下, 在信息栏显示实体信息
         if (this.key.mouse_r) this.mouseRightShowInfo();
         else document.getElementById("info_alert").style.display = "none";
+    }
+
+    /* 响应函数 */
+    update() {
+        engine.updateSelf();
+    }
+    update_camera(target_x, target_y, direct) {
+        // 相机位置是数据坐标位置
+        var c_x = (target_x);
+        var c_y = (target_y);
+        if (this.key.mouse_r) {
+            let sightLevel = .2; // 视野越大, 能看的越远
+            c_x = c_x * (1 - sightLevel) + this.key.mouseX * sightLevel;
+            c_y = c_y * (1 - sightLevel) + this.key.mouseY * sightLevel;
+        }
+        // 平移到屏幕正中间
+        c_x -= this.viewport.x / 2;
+        c_y -= this.viewport.y / 2;
+
+        var x_dif = Math.abs(c_x - this.camera.x);
+        var y_dif = Math.abs(c_y - this.camera.y);
+
+        if (direct) {
+            this.camera.x = c_x;
+            this.camera.y = c_y;
+            return;
+        }
+
+        if (x_dif > this.camera_movement_limit.x) {
+
+            var mag = Math.round(Math.max(1, x_dif * 0.1));
+
+            if (c_x != this.camera.x) {
+
+                this.camera.x += c_x > this.camera.x ? mag : -mag;
+
+                if (this.limit_viewport) {
+
+                    this.camera.x =
+                        Math.min(
+                            this.current_map.width_p - this.viewport.x + this.tile_size,
+                            this.camera.x
+                        );
+
+                    this.camera.x =
+                        Math.max(
+                            0,
+                            this.camera.x
+                        );
+                }
+            }
+        }
+
+        if (y_dif > this.camera_movement_limit.y) {
+
+            var mag = Math.round(Math.max(1, y_dif * 0.1));
+
+            if (c_y != this.camera.y) {
+
+                this.camera.y += c_y > this.camera.y ? mag : -mag;
+
+                if (this.limit_viewport) {
+
+                    this.camera.y =
+                        Math.min(
+                            this.current_map.height_p - this.viewport.y + this.tile_size,
+                            this.camera.y
+                        );
+
+                    this.camera.y =
+                        Math.max(
+                            0,
+                            this.camera.y
+                        );
+                }
+            }
+        }
+    }
+    update_leaderBoard(players) {
+        // 更新leaderBoard
+        let leaderBoard = document.getElementById("leaderBoard");
+        let leaderHTML = "";
+        // 排序
+        players.sort((a, b) => b.state.hp - a.state.hp);
+        for (let player of players) {
+            leaderHTML += `
+            <tr>
+                <td>${player.name}</td>
+                <td>${player.state.hp}</td>
+            </tr>
+            `;
+        }
+        leaderBoard.innerHTML = leaderHTML;
+    }
+    mouseRightShowInfo() {
+            // 从canvas坐标转换为数据坐标
+            let x = this.key.mouseX + this.tile_size / 2;
+            let y = this.key.mouseY + this.tile_size / 2;
+            let tile_x = Math.floor(x / this.tile_size);
+            let tile_y = Math.floor(y / this.tile_size);
+
+            // 获取该tile的信息
+            let tile = this.get_tile(tile_x, tile_y);
+
+            // 展示
+            let info_alert = document.querySelector("#info_alert");
+            info_alert.style.display = "block";
+
+            info_alert.innerHTML = `
+            <span>
+                砖块id: ${tile.id}; ${tile.solid ? "实心" : "空心"}${tile.bounce ? `; 弹力: ${tile.bounce}` : ""}${tile.friction ? `; 摩擦: {${tile.friction.x},${tile.friction.x}}` : ""}${tile.jump ? "; 可抓墙跳" : ""}
+                <br>
+                mouse: {x:${this.mouse.x.toFixed(1)}, y:${this.mouse.y.toFixed(1)}}; key: {x:${this.key.mouseX.toFixed(1)}, y:${this.key.mouseY.toFixed(1)}}; tile: {x:${tile_x}, y:${tile_y}}
+            </span>`;
     }
 }
