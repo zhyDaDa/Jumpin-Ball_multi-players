@@ -1,5 +1,4 @@
-const defaultPlayerSize = 16;
-const defaultHitBoxSize = 16;
+// 渲染常量
 const BGColor = '#333';
 const nameMaxLength = 15;
 const TRACER_LINE_WIDTH = 4;
@@ -11,6 +10,50 @@ const UI_HPBarColor_front = '#02b05d';
 const UI_MPBarColor_front = '#19699f';
 const player_info_fontSize = 12;
 const cursor_size = 20;
+// 物理常量
+const defaultPlayerSize = 16; // 玩家的默认尺寸
+const defaultHitBoxSize = 10; // 玩家的默认碰撞箱尺寸
+const FALLEN_DAMAGE = 10; // 坠落伤害
+const VEL_STILL = 0.05; // 停止速度
+/**
+ * 地图边界的检测范围, 注意要乘上当前地图的tile_size
+ * @property {number} x
+ * @property {number} y
+ */
+const MAP_BOUNDARY_UNIT = { x: 30, y: 20 };
+
+/**
+ * 常量ENUM生成器
+ * @return {Object.<string, number>}
+ */
+const createConstants = (function() {
+    let privateConstants = {};
+
+    return function() {
+        for (let i = 0; i < arguments.length; i++) {
+            privateConstants[arguments[i]] = i;
+        }
+        return privateConstants;
+    };
+})();
+const _enumConstants = [
+    "BULLET_TYPE_NORMAL",
+    "BULLET_TYPE_GOLD",
+    "BULLET_TYPE_SUPER",
+    "BULLET_TYPE_EXPLOSIVE",
+    "BULLET_TYPE_LASER",
+    "SHAPE_CIRCLE",
+    "SHAPE_RECT",
+    "SHAPE_TRIANGLE",
+    "ITEM_TYPE_SPADE", "ITEM_TYPE_CLUB", "ITEM_TYPE_HEART", "ITEM_TYPE_DIAMOND",
+    "ITEM_CLASS_WHITE", "ITEM_CLASS_BLACK",
+    "ITEM_STATE_WILD", "ITEM_STATE_EQUIPPED", "ITEM_STATE_SHOP",
+];
+/**
+ * @readonly
+ * @enum {number}
+ */
+const enums = createConstants(..._enumConstants);
 
 
 /**
