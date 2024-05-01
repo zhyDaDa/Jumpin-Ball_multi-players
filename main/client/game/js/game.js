@@ -361,6 +361,8 @@ class Chara {
 
         this.can_dash = true;
 
+        this.can_float = true;
+
         this.gliding = false;
 
         this.doublejump_ability = true;
@@ -538,6 +540,7 @@ class Player {
             mouseY: 0,
         };
         this.chara = new Chara();
+        this.bullets = [];
         this.ws = undefined;
         this.isRobo = false;
         this.time = 0;
@@ -550,77 +553,15 @@ class Player {
 /**
  * 物理引擎
  */
-class ENGINE {
+class Engine {
     constructor() {
         this.alert_errors = false;
         this.log_info = true;
         this.tile_size = 16;
         this.maps = [];
-        this.load_map();
-    }
-    load_map = function() {
-        const data = JSON.parse(fs.readFileSync(`${serverAddress}/json/map.json`));
-        Object.values(data).forEach((map) => { this._load_map(map) });
-        console.log(`已成功装载地图, 地图mapName: ${this.maps.map(e => e.mapName)}`);
     }
 
-    _load_map = function(map) {
-        const _this = (this); // 保存this的引用
-
-        if (typeof map === 'undefined' ||
-            typeof map.data === 'undefined' ||
-            typeof map.keys === 'undefined') {
-
-            this.error('Error: Invalid map data!');
-
-            return false;
-        }
-
-        // 基本与原本一致, 只处理一些数值问题和合法性检查
-        // _this.current_map = deepCopy(map);
-        _this.maps[map.mapId] = map
-
-        // if (typeof current_maponLoad === "function") current_maponLoad();
-        _this.maps[map.mapId].background = map.background || map.BGColor;
-        _this.maps[map.mapId].gravity = map.gravity || { x: 0, y: 0.3 };
-        this.tile_size = map.tile_size || 16;
-
-        _this.maps[map.mapId].width = 0;
-        _this.maps[map.mapId].height = 0;
-
-        // 把data地图中所有的数字转换为tile对象, 同时记录地图的宽度和高度
-        // TODO: 有改动
-        _this.maps[map.mapId].height = map.data.length;
-
-        map.data.forEach(function(row, y) {
-
-            _this.maps[map.mapId].width = Math.max(_this.maps[map.mapId].width, row.length);
-
-            row.forEach(function(tile, x) {
-
-                // _this.maps[map.mapId].data[y][x] = map.keys[map.data[y][x]];
-            });
-        });
-
-        _this.maps[map.mapId].width_p = _this.maps[map.mapId].width * this.tile_size;
-        _this.maps[map.mapId].height_p = _this.maps[map.mapId].height * this.tile_size;
-
-        console.log(`Successfully loaded map: ${_this.maps[map.mapId].mapName}.`);
-
-        return true;
-    }
-
-    map_script = function(player, argumentList) {
-        switch (argumentList[0]) {
-            case "teleport_map":
-                // teleport_map(mapId);
-                let mapId = parseInt(argumentList[1]);
-                this.teleport_player(player, this.maps[mapId].player.x, this.maps[mapId].player.y, mapId);
-                break;
-        }
-    }
-
-    get_tile_from_mapId = function(mapId) {
+    get_tile_from_mapId(mapId) {
         let _this = (this)
         return function(x, y) {
             x = Math.floor(x);
@@ -630,7 +571,7 @@ class ENGINE {
         };
     }
 
-    teleport_player = function(player, x, y, mapId) {
+    teleport_player(player, x, y, mapId) {
         // 单纯意义上的传送只会改变位置
         if (typeof mapId !== "undefined") {
             // 如果传入了mapId, 则切换地图
@@ -648,7 +589,7 @@ class ENGINE {
         // player.chara.dash_ability = true;
     }
 
-    teleport_player_to_savePoint = function(player) {
+    teleport_player_to_savePoint(player) {
         // 存档点就是地图默认玩家位置
         let current_map = this.maps[player.chara.current_mapId];
         this.teleport_player(player, current_map.player.x, current_map.player.y);
@@ -667,7 +608,7 @@ class ENGINE {
      * @param {{current_mapId: Number, size: Number, loc: {x: Number, y: Number}}} obj
      * @return {Boolean}
      */
-    collisionCheck = function(obj) {
+    collisionCheck(obj) {
         let _this = (this);
         let current_map = _this.maps[obj.current_mapId];
         let tile_size = current_map.tile_size;
@@ -691,7 +632,7 @@ class ENGINE {
      * @param {{current_mapId: Number, loc: {x: Number, y: Number}}} obj
      * @return {Boolean}
      */
-    fallenCheck = function(obj) {
+    fallenCheck(obj) {
             let _this = (this);
             let current_map = _this.maps[obj.current_mapId];
             let tile_size = current_map.tile_size;
@@ -704,7 +645,7 @@ class ENGINE {
          * 负责处理玩家的移动, 确定最终位置
          * @param {Player} player 玩家
          */
-    move_player = function(player) {
+    move_player(player) {
         /* div:异常状态判定 */
         if (player.chara.state.condtion != "normal") {
             player.chara.state.timer_current = new Date().getTime();
@@ -961,7 +902,7 @@ class ENGINE {
      * 处理robo, 模拟玩家控件的行为
      * @param {Player} player 玩家
      */
-    update_robo = function(player) {
+    update_robo(player) {
         if (player.chara.vel.x > 0) {
             player.key.left = false;
             player.key.right = true;
@@ -976,7 +917,7 @@ class ENGINE {
      * 更新所有item
      * @param {Item} item
      */
-    update_item = function(item) {
+    update_item(item) {
         switch (item.state) {
             case enums.ITEM_STATE_WILD:
                 break;
@@ -989,7 +930,7 @@ class ENGINE {
         }
     }
 
-    update_items = function() {
+    update_items() {
             for (let item of Object.values(itemDic)) {
                 this.update_item(item);
             }
@@ -998,7 +939,7 @@ class ENGINE {
          * 处理玩家的按键操作, 转化为函数调用
          * @param {Player} player 玩家
          */
-    update_player = function(player) {
+    update_player(player) {
         player.time = new Date().getTime();
         if (player.isRobo) {
             this.update_robo(player);
@@ -1133,7 +1074,7 @@ class ENGINE {
      * 处理子弹的移动
      * @param {Bullet} bullet 子弹
      */
-    move_bullet = function(bullet) {
+    move_bullet(bullet) {
         let _this = (this);
         let current_map = _this.maps[bullet.current_mapId];
         bullet.update(current_map.gravity);
@@ -1167,7 +1108,7 @@ class ENGINE {
         // todo: 展望: 对于特殊子弹, 需要判断撞墙是否弹跳等...
     }
 
-    update = function() {
+    update() {
         bulletDic.forEach((bulletListInMap, mapId) => {
             bulletListInMap.forEach(bullet => {
                 this.move_bullet(bullet);
@@ -1179,6 +1120,16 @@ class ENGINE {
         this.update_items();
     }
 
+    /**
+     * 作为本地引擎处理, 只计算自己(和自己的子弹)的移动
+     */
+    updateSelf() {
+        for (let bullet of game.player.bullets) {
+            this.move_bullet(bullet);
+        }
+        this.update_player(game.player);
+    }
+
 }
 
 /**
@@ -1186,13 +1137,10 @@ class ENGINE {
  */
 class Game {
     constructor() {
-
         this.alert_errors = false;
         this.log_info = true;
         this.tile_size = 16;
         this.limit_viewport = true;
-        this.jump_switch = 0;
-        this.dash_switch = 0;
 
         this.viewport = {
             x: 200,
@@ -1206,54 +1154,15 @@ class Game {
 
         this.camera_movement_limit = { x: 10, y: 8 };
 
-        this.key = {
-            left: false,
-            right: false,
-            up: false,
-            down: false,
-            space: false,
-            dash: false,
-            pick: false,
-            drop: false,
-            reload: false,
-            switch: false,
-            mouse_l: false,
-            mouse_m: false,
-            mouse_r: false,
-            mouseX: 0,
-            mouseY: 0,
-        };
-
         /**
          * 光标位置是canvas坐标
          */
         this.mouse = { x: 0, y: 0 };
 
-        this.player = {
-            name: undefined,
-            colour: undefined,
+        this.player = new Player();
 
-            loc: {
-                x: 0,
-                y: 0
-            },
+        this.current_map = null;
 
-            vel: {
-                x: 0,
-                y: 0
-            },
-
-            can_jump: true,
-            doublejumpFlag: false,
-            can_doublejump: true,
-            can_dash: true,
-            doublejump_ability: checkDoubleJumpFlag(),
-            glide_ability: checkGlide(),
-            dash_ability: checkDash(),
-            float_ability: checkFloat(),
-
-            deaths: { red: localStorage.getItem("deathCount_red") << 0, drop: localStorage.getItem("deathCount_drop") << 0, all: function() { return this.red + this.drop; } }
-        };
 
         window.onkeydown = this.keydown.bind(this);
         window.onkeyup = this.keyup.bind(this);
@@ -1262,74 +1171,69 @@ class Game {
         window.onmouseup = this.mouseUp.bind(this);
     }
     error(message) {
-
         if (this.alert_errors) alert(message);
         if (this.log_info) console.log(message);
     }
     log(message) {
-
         if (this.log_info) console.log(message);
     }
     set_viewport(x, y) {
-
         this.viewport.x = x;
         this.viewport.y = y;
     }
     keydown(e) {
-
         var _this = this;
 
         switch (e.keyCode) {
             case 37:
-                _this.key.left = true;
+                _this.player.key.left = true;
                 break;
             case 65:
-                _this.key.left = true;
+                _this.player.key.left = true;
                 break;
             case 38:
-                _this.key.up = true;
+                _this.player.key.up = true;
                 break;
             case 87:
-                _this.key.up = true;
+                _this.player.key.up = true;
                 break;
             case 39:
-                _this.key.right = true;
+                _this.player.key.right = true;
                 break;
             case 68:
-                _this.key.right = true;
+                _this.player.key.right = true;
                 break;
             case 40:
-                _this.key.down = true;
+                _this.player.key.down = true;
                 break;
             case 83: //s
-                _this.key.down = true;
+                _this.player.key.down = true;
                 break;
             case 32: //space
-                _this.key.space = true;
+                _this.player.key.space = true;
                 break;
             case 74: //j
             case 16: //shift
-                _this.key.dash = true;
+                _this.player.key.dash = true;
                 break;
             case 69: //e
-                _this.key.pick = true;
+                _this.player.key.pick = true;
                 break;
             case 71: //g
-                _this.key.drop = true;
+                _this.player.key.drop = true;
                 break;
             case 82: //r
-                _this.key.reload = true;
+                _this.player.key.reload = true;
                 break;
             case 9: //tab
                 e.preventDefault();
-                _this.key.switch = true;
+                _this.player.key.switch = true;
                 break;
             default:
                 // case 79: //o
                 //     this.load_map(0);
                 //     break;
         }
-        tellServer();
     }
     keyup(e) {
 
@@ -1337,52 +1241,51 @@ class Game {
 
         switch (e.keyCode) {
             case 37:
-                _this.key.left = false;
+                _this.player.key.left = false;
                 break;
             case 65:
-                _this.key.left = false;
+                _this.player.key.left = false;
                 break;
             case 38:
-                _this.key.up = false;
+                _this.player.key.up = false;
                 break;
             case 87:
-                _this.key.up = false;
+                _this.player.key.up = false;
                 break;
             case 39:
-                _this.key.right = false;
+                _this.player.key.right = false;
                 break;
             case 68:
-                _this.key.right = false;
+                _this.player.key.right = false;
                 break;
             case 40:
-                _this.key.down = false;
+                _this.player.key.down = false;
                 break;
             case 83:
-                _this.key.down = false;
+                _this.player.key.down = false;
                 break;
             case 32: //space
-                _this.key.space = false;
+                _this.player.key.space = false;
                 break;
             case 74: //j
             case 16: //shift
-                _this.key.dash = false;
+                _this.player.key.dash = false;
                 break;
             case 69: //e
-                _this.key.pick = false;
+                _this.player.key.pick = false;
                 break;
             case 71: //g
-                _this.key.drop = false;
+                _this.player.key.drop = false;
                 break;
             case 82: //r
-                _this.key.reload = false;
+                _this.player.key.reload = false;
                 break;
             case 9: //tab
                 e.preventDefault();
-                _this.key.switch = false;
+                _this.player.key.switch = false;
                 break;
             default:
         }
-        tellServer();
     }
     mouseMove(e) {
         const _this = (this);
@@ -1391,40 +1294,40 @@ class Game {
             x: e.clientX / zoomIndex,
             y: e.clientY / zoomIndex
         };
-        tellServer();
+        // player.key的mouse是绝对坐标
+        _this.player.key.mouseX = _this.mouse.x + _this.camera.x;
+        _this.player.key.mouseY = _this.mouse.y + _this.camera.y;
     }
     mouseDown(e) {
         const _this = (this);
         switch (e.button) {
             case 0: //左键
-                _this.key.mouse_l = true;
+                _this.player.key.mouse_l = true;
                 break;
             case 1: //中键
-                _this.key.mouse_m = true;
+                _this.player.key.mouse_m = true;
                 break;
             case 2: //右键
-                _this.key.mouse_r = true;
+                _this.player.key.mouse_r = true;
                 break;
         }
-        tellServer();
     }
     mouseUp(e) {
         const _this = (this);
         switch (e.button) {
             case 0: //左键
-                _this.key.mouse_l = false;
+                _this.player.key.mouse_l = false;
                 break;
             case 1: //中键
-                _this.key.mouse_m = false;
+                _this.player.key.mouse_m = false;
                 break;
             case 2: //右键
-                _this.key.mouse_r = false;
+                _this.player.key.mouse_r = false;
                 break;
         }
-        tellServer();
     }
     load_map(map_id) {
-        // 从服务器加载地图
+        // 从服务器加载地图 #TODO: 改用pull方法
         socket_file.send(JSON.stringify({ type: "map", map_id: map_id }));
     }
     set_map(map) {
@@ -1440,7 +1343,7 @@ class Game {
         this.current_map = (map);
 
         if (typeof this.current_map.onLoad === "function") this.current_map.onLoad();
-        this.player.can_float = true;
+        this.player.chara.can_float = true;
         this.current_map.background = map.background || map.BGColor;
         this.current_map.gravity = map.gravity || { x: 0, y: 0.3 };
         this.tile_size = map.tile_size || 16;
@@ -1466,13 +1369,6 @@ class Game {
 
         this.current_map.width_p = this.current_map.width * this.tile_size;
         this.current_map.height_p = this.current_map.height * this.tile_size;
-
-        this.key.left = false;
-        this.key.up = false;
-        this.key.right = false;
-        this.key.down = false;
-        this.key.key_j = false;
-        this.key.key_k = false;
 
         this.log('Successfully loaded map data.');
 
@@ -1529,37 +1425,15 @@ class Game {
 
     }
     draw_items(context, items) {
-            for (let item of items) {
-                this.draw_item(context, item);
-            }
+        for (let item of items) {
+            this.draw_item(context, item);
         }
-        /**
-         * @typedef {Object} Item
-         * with basic_attributes
-         * @property {string} name
-         * @property {string} pic_src
-         * @property {number} type
-         * @property {number} class
-         * @property {number} tier
-         * @property {number} price
-         * with info
-         * @property {string} colour
-         * @property {string} info
-         * @property {number} id
-         * @property {string} belongerIp
-         * @property {number} state
-         * with position
-         * @property {number} mapId
-         * @property {{x: Number, y: Number}} pos
-         */
-        /**
-         * @param {Item} item
-         */
+    }
     draw_item(context, item) {
-        let x = item.pos.x * this.tile_size - this.camera.x;
-        let y = item.pos.y * this.tile_size - this.camera.y;
+        let x = item.pos.x * this.current_map.tile_size - this.camera.x;
+        let y = item.pos.y * this.current_map.tile_size - this.camera.y;
 
-        let len = this.tile_size * 3 / 4;
+        let len = this.current_map.tile_size * 3 / 4;
 
         if (picDic[item.pic_src]) {
             let img = new Image();
@@ -1570,10 +1444,10 @@ class Game {
             let drawHeight = img.height * scale;
             context.drawImage(img, x - drawWidth / 2, y - drawHeight / 2, drawWidth, drawHeight);
         } else {
-            // 请求图片
+            // 请求图片 #TODO: 改用pull方法
             socket_file.send(JSON.stringify({ type: "item_pic", pic_src: item.pic_src }));
             // 绘制默认图片
-            context.fillStyle = "black";
+            context.fillStyle = "#00000066";
             context.fillRect(x, y, this.tile_size / 2, this.tile_size / 2);
         }
     }
@@ -1679,8 +1553,7 @@ class Game {
         context.closePath();
     }
     update() {
-
-        this.update_player();
+        engine.updateSelf();
     }
     update_camera(target_x, target_y, direct) {
         // 相机位置是数据坐标位置
@@ -1806,7 +1679,7 @@ class Game {
     draw_player_action(context) {
         const _this = (this);
 
-        if (_this.key.mouse_r) {
+        if (_this.player.key.mouse_r) {
             // 画出玩家和光标的连线, 虚线
             context.beginPath();
             context.strokeStyle = "white";
