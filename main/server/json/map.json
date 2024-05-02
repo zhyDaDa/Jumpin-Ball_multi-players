@@ -100,7 +100,7 @@
             "right": 0.5
         },
 
-        "player": {
+        "playerCheckPoint": {
             "x": 17,
             "y": 9
         },
@@ -170,7 +170,7 @@
             "right": 0.5
         },
 
-        "player": {
+        "playerCheckPoint": {
             "x": 17,
             "y": 9
         },
@@ -259,7 +259,7 @@
             "right": 0.5
         },
 
-        "player": {
+        "playerCheckPoint": {
             "x": 17,
             "y": 9
         },
