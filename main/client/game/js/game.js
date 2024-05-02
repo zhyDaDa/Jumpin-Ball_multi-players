@@ -478,7 +478,7 @@ class Engine {
     }
 
     update_items() {
-            for (let item of Object.values(itemDic)) {
+            for (let item in Object.values(itemDic)) {
                 this.update_item(item);
             }
         }
@@ -671,7 +671,7 @@ class Engine {
      * 作为本地引擎处理, 只计算自己(和自己的子弹)的移动
      */
     updateSelf() {
-        for (let bullet of game.player.bullets) {
+        for (let bullet in game.player.bullets) {
             this.move_bullet(bullet);
         }
         this.update_player(game.player);
@@ -942,7 +942,7 @@ class Game {
 
     }
     draw_items(context, items) {
-        for (let item of items) {
+        for (let item in items) {
             this.draw_item(context, item);
         }
     }
@@ -967,8 +967,9 @@ class Game {
         }
     }
     draw_all_players(context, players) {
-        for (let player of players)
+        players.forEach(player => {
             this.draw_player(context, player);
+        });
     }
     draw_player(context, player) {
         let span = player_info_fontSize * nameMaxLength / 2; // 显示名字的矩形的宽度
@@ -976,9 +977,9 @@ class Game {
         context.fillStyle = player.colour;
         context.beginPath();
         context.arc(
-            player.loc.x - this.camera.x,
-            player.loc.y - this.camera.y,
-            player.size / 2 - 1,
+            player.chara.loc.x - this.camera.x,
+            player.chara.loc.y - this.camera.y,
+            player.chara.size / 2 - 1,
             0,
             Math.PI * 2
         );
@@ -986,7 +987,7 @@ class Game {
         context.closePath();
         // 绘制特效
         // 静态特效_特殊状态
-        if (player.state.condtion == "fallen" || player.state.condtion == "dead") {
+        if (player.chara.state.condtion == "fallen" || player.chara.state.condtion == "dead") {
             // 在其周围绘制虚线圆
             context.beginPath();
             context.strokeStyle = "white";
@@ -998,8 +999,8 @@ class Game {
             context.lineDashOffset = 0;
             context.setLineDash([c / sliceNum * 2 / 3, c / sliceNum / 3]);
             context.arc(
-                player.loc.x - this.camera.x,
-                player.loc.y - this.camera.y,
+                player.chara.loc.x - this.camera.x,
+                player.chara.loc.y - this.camera.y,
                 radius,
                 0 + new Date().getTime() / interval % (16) * (2 * Math.PI / 16),
                 (2 * Math.PI) + new Date().getTime() / interval % (16) * (2 * Math.PI / 16)
@@ -1012,15 +1013,15 @@ class Game {
             context.beginPath();
             context.fillStyle = "white";
             context.fillRect(
-                player.loc.x - this.camera.x - span / 4,
-                player.loc.y - this.camera.y + this.tile_size / 2 + 8,
-                span / 2 * (player.state.timer_current - player.state.timer_begin) / (player.state.timer_end - player.state.timer_begin),
+                player.chara.loc.x - this.camera.x - span / 4,
+                player.chara.loc.y - this.camera.y + this.tile_size / 2 + 8,
+                span / 2 * (player.chara.state.timer_current - player.chara.state.timer_begin) / (player.chara.state.timer_end - player.chara.state.timer_begin),
                 HPBarHeight);
             context.closePath();
         }
 
         // 动态特效_悬浮
-        if (player.gliding) {
+        if (player.chara.gliding) {
             // 在其上方绘制半圆弧
             context.beginPath();
             context.strokeStyle = "white";
@@ -1028,8 +1029,8 @@ class Game {
             let radius = this.tile_size * .5 + 3;
             let c = 2 * Math.PI * radius;
             context.arc(
-                player.loc.x - this.camera.x,
-                player.loc.y - this.camera.y,
+                player.chara.loc.x - this.camera.x,
+                player.chara.loc.y - this.camera.y,
                 radius,
                 0, Math.PI,
                 true
@@ -1041,11 +1042,11 @@ class Game {
         // 绘制玩家的名字
         context.lineWidth = 1;
         context.font = player_info_fontSize + "px Georgia";
-        let textWidth = context.measureText(player.name).width;
+        let textWidth = context.measureText(player.chara.name).width;
         // 为了让文字更清晰, 在文字下方画一个白色矩形
         context.beginPath();
         context.fillStyle = "#ffffff66";
-        context.fillRect(player.loc.x - this.camera.x - span / 2, player.loc.y - this.camera.y - this.tile_size - player_info_fontSize - 1, span, player_info_fontSize + 2);
+        context.fillRect(player.chara.loc.x - this.camera.x - span / 2, player.chara.loc.y - this.camera.y - this.tile_size - player_info_fontSize - 1, span, player_info_fontSize + 2);
         // context.closePath();
         // 居中绘制玩家名字, 黑字白色描边
         context.fillStyle = "black";
@@ -1053,17 +1054,17 @@ class Game {
         // y方向正中间是 loc.y - camera.y
         // 向左挪半个文字宽度, 向上挪一个格子
         context.fillText(
-            player.name,
-            player.loc.x - this.camera.x - textWidth / 2,
-            player.loc.y - this.camera.y - this.tile_size);
+            player.chara.name,
+            player.chara.loc.x - this.camera.x - textWidth / 2,
+            player.chara.loc.y - this.camera.y - this.tile_size);
         context.closePath();
         // 在最上面绘制血条
         context.beginPath();
         context.fillStyle = HPBarColor;
         context.fillRect(
-            player.loc.x - this.camera.x - span / 2,
-            player.loc.y - this.camera.y - this.tile_size - player_info_fontSize - HPBarHeight,
-            span * player.state.hp / player.state.hp_max,
+            player.chara.loc.x - this.camera.x - span / 2,
+            player.chara.loc.y - this.camera.y - this.tile_size - player_info_fontSize - HPBarHeight,
+            span * player.chara.state.hp / player.chara.state.hp_max,
             HPBarHeight);
         context.closePath();
     }
@@ -1132,7 +1133,7 @@ class Game {
         }
     }
     draw_bullets(context, bullets) {
-        for (let bullet of bullets) {
+        for (let bullet in bullets) {
             this.draw_bullet(context, bullet);
         }
     }
@@ -1342,7 +1343,7 @@ class Game {
     }
     draw(context) {
         let bullets = [];
-        for (let p of this.players) {
+        for (let p in this.players) {
             bullets = bullets.concat(p.bullets);
         }
         this.draw_all(context, this.player.chara.current_mapId, this.players, this.items, this.player.bullets);
@@ -1353,8 +1354,9 @@ class Game {
         engine.updateSelf();
     }
     update_situation(players, items) {
-        this.players = players;
-        this.items = items;
+        console.log(`接收服务器的情况更新, players: ${players.length}, items: ${items.length}`);
+        this.players = deepCopy(players, true);
+        this.items = deepCopy(items, true);
     }
     update_camera(target_x, target_y, direct) {
         // 相机位置是数据坐标位置
@@ -1433,12 +1435,12 @@ class Game {
         let leaderBoard = document.getElementById("leaderBoard");
         let leaderHTML = "";
         // 排序
-        players.sort((a, b) => b.state.hp - a.state.hp);
+        players.sort((a, b) => b.chara.state.hp - a.chara.state.hp);
         for (let player of players) {
             leaderHTML += `
             <tr>
-                <td>${player.name}</td>
-                <td>${player.state.hp}</td>
+                <td>${player.chara.name}</td>
+                <td>${player.chara.state.hp}</td>
             </tr>
             `;
         }

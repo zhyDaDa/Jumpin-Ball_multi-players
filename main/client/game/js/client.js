@@ -96,7 +96,7 @@ function pullSever(data) {
             game.update_situation(data.data.players, data.data.items);
 
             // 更新leaderBoard
-            game.update_leaderBoard(data.players);
+            game.update_leaderBoard(data.data.players);
             break;
         case "map":
             console.log("准备从服务器接受'map'类型数据");

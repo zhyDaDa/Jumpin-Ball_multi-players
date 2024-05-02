@@ -106,7 +106,7 @@ wss.on('connection', function(ws) {
     let ip = ws._socket.remoteAddress;
     if (playerDic[ip] === undefined) {
         playerDic[ip] = new Player();
-        playerDic[ip].ws = ws;
+        playerDic[ip].ip = ip;
         playerDic[ip].chara.ip = ip;
 
         playerDic[ip].chara.name = ip + "";
@@ -150,7 +150,7 @@ wss.on('connection', function(ws) {
         }
     })();
 
-    // 为其设置监听
+    // div: 为其设置监听
     ws.on('message', function(message) {
         // 获得消息来源的ip和端口号
         let ip = ws._socket.remoteAddress;
@@ -160,8 +160,8 @@ wss.on('connection', function(ws) {
         switch (data.type) {
             case "player":
                 // 更新player的数据
-                data.data.ws = ws;
-                playerDic[ip] = data.data;
+                playerDic[ip] = deepCopy(data.data);
+                playerDic[ip].ip = ip;
                 break;
             case "time":
                 let delta = new Date().getTime() - data.data.time;
@@ -227,6 +227,22 @@ function sendAll(message) {
     })
 }
 
+const deepCopy = function(source, kaiguan) {
+    let result = {};
+    if (kaiguan == 1) result = [];
+    for (let key in source) {
+        if (Object.prototype.toString.call(source[key]) === '[object Object]') {
+            result[key] = deepCopy(source[key])
+        }
+        if (Object.prototype.toString.call(source[key]) === '[object Array]') {
+            result[key] = deepCopy(source[key], 1)
+        } else {
+            result[key] = source[key]
+        }
+    }
+    return result;
+}
+
 const load_map = () => {
     const data = JSON.parse(fs.readFileSync(`${serverAddress}/json/map.json`));
     Object.values(data).forEach((map) => {
@@ -237,24 +253,22 @@ const load_map = () => {
 }
 
 const broadcast = () => {
+    if (typeof wss === "undefined" || typeof wss.clients === "undefined" || wss.clients.size < 1) return;
     // client端: game.draw(ctx, data.map_id, data.players);
-    let _this = (this);
-    let allCharas = Object.values(playerDic).map((player) => player.chara);
+    let allCharas = Object.values(playerDic);
     let allItems = Object.values(itemDic);
     let data = {
-        map_id: 0,
         players: [],
         items: [],
-        bullets: [],
         time: new Date().getTime()
     }
 
     // 提前按地图将三个数组分类
     let dic = {};
-    _this.maps.forEach(map => {
+    mapDic.map(map => {
         let map_id = map.mapId;
         dic[map_id] = {
-            players: allCharas.filter((player) => player.current_mapId == map_id),
+            players: allCharas.filter((player) => player.chara.current_mapId == map_id),
             items: allItems.filter((item) => item.mapId == map_id && item.state != enums.ITEM_STATE_EQUIPPED),
             // bullets: [],
         };
@@ -263,19 +277,19 @@ const broadcast = () => {
         // }
     });
 
-    wss.clients.forEach(function(client) {
+    wss.clients.forEach(client => {
         // 获取client的ip
         let thisIp = client._socket.remoteAddress;
         if (!playerDic[thisIp]) return;
-        // data.map_id = playerDic[thisIp].chara.current_mapId;
-        data.players = dic[data.map_id].players;
-        data.items = dic[data.map_id].items;
+        let map_id = playerDic[thisIp].chara.current_mapId;
+        data.players = dic[map_id].players;
+        data.items = dic[map_id].items;
         // 将自己放到数组的第一个位置
         let index = data.players.findIndex((player) => player.ip === thisIp);
         if (index != -1) {
             data.players.unshift(data.players.splice(index, 1)[0]);
-        } else { console.log(`broadcast函数中: IP为${thisIp}的玩家没找到本人`); }
-
+        } else { console.error(`broadcast函数中: IP为${thisIp}的玩家没找到本人`); }
+        console.log(data);
         let message = JSON.stringify({
             type: "game",
             data: data
@@ -970,6 +984,11 @@ class GAME {
 
 console.log("定义结束");
 load_map();
+
+setInterval(() => {
+    broadcast();
+}, 1000 / 70);
+
 // let game = new GAME();
 // game.load_map();
 // let robo = new Player();

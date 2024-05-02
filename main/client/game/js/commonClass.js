@@ -701,7 +701,7 @@ class Player {
         };
         this.chara = new Chara();
         this.bullets = [];
-        this.ws = undefined;
+        this.ip = "";
         this.isRobo = false;
         this.time = 0;
         this.latency = 0;
