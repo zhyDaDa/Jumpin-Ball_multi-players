@@ -111,7 +111,7 @@ class MapData {
             [1, 1, 1],
             [2, 2, 2]
         ];
-        this.setup();
+        this.getWidHei();
         this.gravity = mapData.gravity || { "x": 0, "y": 0.24 };
         this.vel_limit = mapData.vel_limit || { "x": 4, "y": 10 };
         this.movement_speed = mapData.movement_speed || { "jump": 6, "left": 0.5, "right": 0.5 };
@@ -129,11 +129,17 @@ class MapData {
         return true;
     }
 
-    setup() {
+    getWidHei() {
         // if (typeof this.current_map.onLoad === "function") this.current_map.onLoad();
         this.width = 0;
         this.height = this.data.length;
 
+        this.data.forEach((row, y) => {
+            this.width = Math.max(this.width, row.length)
+        });
+    }
+
+    unzip() {
         this.data.forEach((row, y) => {
             this.width = Math.max(this.width, row.length);
             row.forEach((tile, x) => {
@@ -142,10 +148,12 @@ class MapData {
         });
     }
 
-    getRealTile(x) {
-        return function(y) {
-            return this.keys[this._data[y][x]];
-        }
+    zip() {
+        this.data.forEach((row, y) => {
+            row.forEach((tile, x) => {
+                this.data[y][x] = tile.id;
+            });
+        });
     }
 
 }

@@ -92,9 +92,15 @@ class Engine {
         this.maps = [];
     }
 
+    /**
+     * 输入压缩的地图数据, 转存在engine的maps中
+     * @param {Object} mapData 压缩的地图数据
+     * @return {Boolean} 是否成功加载
+     */
     load_map(mapData) {
         try {
             let m = new MapData(mapData);
+            m.unzi
             this.maps[m.mapId] = m;
             return true;
         } catch (e) {

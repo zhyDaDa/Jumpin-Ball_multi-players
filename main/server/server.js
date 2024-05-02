@@ -124,7 +124,6 @@ wss.on('connection', function(ws) {
         })();
     }
 
-    // TODO: 发送图片和地图数据
     (() => {
         console.log(`client ${ws._socket.remoteAddress} 初次连接, 准备向其发送图片和地图数据`);
         // 用fs遍历`${serverAddress}/images`, 逐一发送
