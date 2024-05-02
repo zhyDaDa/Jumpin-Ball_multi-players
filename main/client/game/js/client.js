@@ -24,13 +24,13 @@ function setServer(serverAddress) {
     document.querySelector("#currentServerIP").innerText = serverAddress;
     document.querySelector("#h6_3").innerHTML = `<font color="blue"> 尝试连接服务器中... </font>`
     window.socket = new WebSocket(serverAddress);
-    window.socket_file = new WebSocket(serverAddress + "0");
+    // window.socket_file = new WebSocket(serverAddress + "0");
 
     socket.onopen = function() {
         console.log("成功连接到服务器");
         // alert("成功连接到服务器");
         document.querySelector("#h6_3").innerHTML = `<font color="green"> 成功连接到服务器 </font>`;
-
+        game.runningFlag = true;
     };
     /* div: 接收消息 */
     socket.onmessage = function(e) {
@@ -65,26 +65,26 @@ function setServer(serverAddress) {
             }
         }, 5000);
     };
-    socket_file.onmessage = function(e) {
-        let obj = JSON.parse(e.data);
-        switch (obj.type) {
-            case "map":
-                game.set_map(obj.data);
-                break;
-            case "item_pic":
-                picDic[obj.data.pic_src] = obj.data.src;
-                break;
-            case "time":
-                socket_file.send(JSON.stringify({
-                    type: "time",
-                    time: obj.data.time
-                }));
-                document.querySelectorAll(".serverDelay").forEach(el => el.innerText = Number(obj.data.latency).toFixed(2));
-                break;
-            default:
-                break;
-        }
-    }
+    // socket_file.onmessage = function(e) {
+    //     let obj = JSON.parse(e.data);
+    //     switch (obj.type) {
+    //         case "map":
+    //             game.set_map(obj.data);
+    //             break;
+    //         case "item_pic":
+    //             picDic[obj.data.pic_src] = obj.data.src;
+    //             break;
+    //         case "time":
+    //             socket_file.send(JSON.stringify({
+    //                 type: "time",
+    //                 time: obj.data.time
+    //             }));
+    //             document.querySelectorAll(".serverDelay").forEach(el => el.innerText = Number(obj.data.latency).toFixed(2));
+    //             break;
+    //         default:
+    //             break;
+    //     }
+    // }
 }
 
 /** 从服务器获取数据 */
@@ -99,7 +99,8 @@ function pullSever(data) {
             game.update_leaderBoard(data.players);
             break;
         case "map":
-            engine.load_map(data.data);
+            console.log("准备从服务器接受'map'类型数据");
+            if (engine.load_map(data.data)) console.log("从服务器加载地图成功");
             break;
         case "pic":
             picDic[data.data.pic_src] = data.data.base64;
@@ -127,7 +128,7 @@ function pushServer(type, data) {
             }));
             break;
         case "time":
-            window.socket_file.send(JSON.stringify({
+            window.socket.send(JSON.stringify({
                 type: "time",
                 data: data
             }));
@@ -160,8 +161,6 @@ const canvas = document.getElementById('canvas'),
 const engine = new Engine();
 const game = new Game();
 
-const thisPlayer = new Player();
-
 
 
 // 获取窗口宽高, 并设置canvas的大小
@@ -174,7 +173,7 @@ function setViewZoom(zoomIndex) {
     // 防止camera瞬时偏移
     game.update_camera(game.player.chara.loc.x, game.player.chara.loc.y, true);
 }
-setViewZoom(zoomIndex);
+// setViewZoom(zoomIndex);  
 
 /* 将viewport限制在地图的范围内*/
 game.limit_viewport = false;
@@ -195,17 +194,23 @@ window.requestAnimFrame =
     };
 
 const Loop = function() {
-    // 清空画布
-    ctx.fillStyle = game.current_map.background;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    // 本地物理引擎计算
-    engine.updateSelf();
-    // 提交服务器
-    pushServer("player", game.player);
-    // 渲染
-    game.draw(ctx);
-
-    anim = window.requestAnimFrame(Loop);
+    try {
+        if (game.runningFlag) {
+            // 清空画布
+            ctx.fillStyle = game.current_map.background;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // 本地物理引擎计算
+            engine.updateSelf();
+            // 提交服务器
+            pushServer("player", game.player);
+            // 渲染
+            game.draw(ctx);
+        }
+    } catch (e) {
+        console.error("Loop中发生错误\n" + e);
+    } finally {
+        anim = window.requestAnimFrame(Loop);
+    }
 };
 
 Loop();
