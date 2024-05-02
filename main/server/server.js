@@ -176,12 +176,21 @@ wss.on('connection', function(ws) {
     // 链接关闭
     ws.on('close', function() {
         console.log(`client ${ws._socket.remoteAddress} disconnected`);
+        clearInterval(ws.timeCheckInterval);
         // 去除playerDic中的ip
         if (playerDic[ws._socket.remoteAddress]) {
             delete playerDic[ws._socket.remoteAddress];
             console.log(`playerDic中的${ws._socket.remoteAddress}已删除`);
         }
     });
+
+    // 发送游戏开始信号
+    ws.send(JSON.stringify({
+        type: "signal",
+        data: {
+            content: "initialization_done"
+        }
+    }));
 });
 
 //SIGINT这个信号是系统默认信号，代表信号中断，就是ctrl+c

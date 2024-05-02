@@ -878,23 +878,10 @@ class Game {
             return false;
         }
 
-        this.current_map.width = 0;
-        this.current_map.height = this.current_map._data.length;
-
-        this.current_map.data = [];
-        for (let i = 0; i < this.current_map._data.length; i++) {
-            this.current_map.data[i] = [];
-            this.current_map.width = max(this.current_map.width, this.current_map._data[i].length);
-            for (let j = 0; j < this.current_map._data[i].length; j++) {
-                this.current_map.data[i][j] = deepCopy(this.current_map.keys[this.current_map._data[i][j]]);
-            }
-        }
-
         this.current_map.width_p = this.current_map.width * this.current_map.tile_size;
         this.current_map.height_p = this.current_map.height * this.current_map.tile_size;
 
         this.log('Successfully loaded map data.');
-
         return true;
     }
     get_tile(x, y) {
@@ -1077,7 +1064,7 @@ class Game {
     draw_cursor(context) {
         const _this = (this);
         // 画出准星, 由四个矩形组成
-        if (!this.key.mouse_l) {
+        if (!this.player.key.mouse_l) {
             context.beginPath();
             context.strokeStyle = "white";
             context.lineWidth = .2 * cursor_size;
@@ -1116,8 +1103,8 @@ class Game {
             context.strokeStyle = "white";
             context.lineWidth = TRACER_LINE_WIDTH;
             // 表示玩家和光标的canvas坐标
-            let p_X = _this.player.loc.x - _this.camera.x;
-            let p_Y = _this.player.loc.y - _this.camera.y;
+            let p_X = _this.player.chara.loc.x - _this.camera.x;
+            let p_Y = _this.player.chara.loc.y - _this.camera.y;
             let c_X = _this.mouse.x;
             let c_Y = _this.mouse.y;
             let len = Math.sqrt(
@@ -1188,16 +1175,16 @@ class Game {
         y = UI_lefttop_y;
         context.fillRect(x - overblood,
             y - overblood,
-            this.player.state.hp_max * UI_unitlength + overblood * 2,
+            this.player.chara.state.hp_max * UI_unitlength + overblood * 2,
             UI_HPBarHeight + overblood * 2);
 
         context.fillStyle = UI_HPBarColor_front;
-        context.fillRect(x, y, this.player.state.hp * UI_unitlength, UI_HPBarHeight);
+        context.fillRect(x, y, this.player.chara.state.hp * UI_unitlength, UI_HPBarHeight);
         context.lineWidth = UI_digitLineWidth;
         context.font = player_info_fontSize + "px Arial";
-        let text = this.player.state.hp + " / " + this.player.state.hp_max;
+        let text = this.player.chara.state.hp + " / " + this.player.chara.state.hp_max;
         let textWidth = context.measureText(text).width;
-        let center_x = x + this.player.state.hp_max * UI_unitlength / 2;
+        let center_x = x + this.player.chara.state.hp_max * UI_unitlength / 2;
         let center_y = y + UI_HPBarHeight / 2;
         context.strokeStyle = "white";
         context.strokeText(text,
@@ -1211,17 +1198,17 @@ class Game {
         y += UI_HPBarHeight + UI_margin_y;
         context.fillRect(x - overblood,
             y - overblood,
-            this.player.state.mp_max * UI_unitlength + overblood * 2,
+            this.player.chara.state.mp_max * UI_unitlength + overblood * 2,
             UI_MPBarHeight + overblood * 2);
 
         context.fillStyle = UI_MPBarColor_front;
-        context.fillRect(x, y, this.player.state.mp * UI_unitlength, UI_MPBarHeight);
+        context.fillRect(x, y, this.player.chara.state.mp * UI_unitlength, UI_MPBarHeight);
 
         context.lineWidth = UI_digitLineWidth;
         context.font = player_info_fontSize + "px Arial";
-        text = this.player.state.mp + " / " + this.player.state.mp_max;
+        text = this.player.chara.state.mp + " / " + this.player.chara.state.mp_max;
         textWidth = context.measureText(text).width;
-        center_x = x + this.player.state.mp_max * UI_unitlength / 2;
+        center_x = x + this.player.chara.state.mp_max * UI_unitlength / 2;
         center_y = y + UI_MPBarHeight / 2;
         context.strokeStyle = "white";
         context.strokeText(text,
@@ -1243,10 +1230,10 @@ class Game {
         context.fillRect(x, y, UI_weaponPicBox_width, UI_weaponPicBox_height);
 
         // 绘制武器png
-        if (this.player.equipment.spade.length > 0) {
-            if (picDic[this.player.equipment.spade[0].pic_src]) {
+        if (this.player.chara.equipment.spade.length > 0) {
+            if (picDic[this.player.chara.equipment.spade[0].pic_src]) {
                 let img = new Image();
-                img.src = picDic[this.player.equipment.spade[0].pic_src];
+                img.src = picDic[this.player.chara.equipment.spade[0].pic_src];
                 // 居中绘制
                 let scale = Math.min((UI_weaponPicBox_width - overblood * 2) / img.width, (UI_weaponPicBox_height - overblood * 2) / img.height);
                 let drawWidth = img.width * scale;
@@ -1254,7 +1241,7 @@ class Game {
                 context.drawImage(img, x + UI_weaponPicBox_width / 2 - drawWidth / 2, y + UI_weaponPicBox_height / 2 - drawHeight / 2, drawWidth, drawHeight);
             } else {
                 // 请求图片
-                socket_file.send(JSON.stringify({ type: "item_pic", pic_src: this.player.equipment.spade[0].pic_src }));
+                socket_file.send(JSON.stringify({ type: "item_pic", pic_src: this.player.chara.equipment.spade[0].pic_src }));
                 // 绘制默认图片
                 context.fillStyle = "black";
                 context.fillRect(x + overblood, y + overblood, UI_weaponPicBox_width - overblood * 2, UI_weaponPicBox_height - overblood * 2);
@@ -1266,7 +1253,7 @@ class Game {
             context.fillStyle = "#eeeeee88";
             context.fillRect(x, y, UI_weaponPicBox_width, UI_WeaponNameHeight);
             context.font = UI_WeaponNameHeight + "px Arial";
-            text = this.player.equipment.spade[0].name;
+            text = this.player.chara.equipment.spade[0].name;
             textWidth = context.measureText(text).width;
             center_x = x + UI_weaponPicBox_width / 2;
             center_y = y + UI_WeaponNameHeight / 2;
@@ -1282,10 +1269,10 @@ class Game {
             x -= UI_margin_x + ammoBoxWidth;
             context.fillRect(x, y, ammoBoxWidth, ammoBoxHeight);
 
-            if (this.player.equipment.spade[0].fireState != "reloading") {
+            if (this.player.chara.equipment.spade[0].fireState != "reloading") {
                 // 画出子弹数量
-                let ammo = this.player.equipment.spade[0].ammo;
-                let ammo_max = this.player.equipment.spade[0].ammo_max;
+                let ammo = this.player.chara.equipment.spade[0].ammo;
+                let ammo_max = this.player.chara.equipment.spade[0].ammo_max;
                 let ammoWidth = ammoBoxWidth - overblood * 2;
                 let ammoHeight = (ammoBoxHeight - overblood * 2) / ammo_max * 4 / 5;
                 let ammoMargin = ammoHeight / 4;
@@ -1299,9 +1286,9 @@ class Game {
                 }
             } else {
                 // 用绿色画出reload时间的比例
-                let time = this.player.equipment.spade[0].time;
-                let startReload = this.player.equipment.spade[0].startReload;
-                let reload = this.player.equipment.spade[0].reload;
+                let time = this.player.chara.equipment.spade[0].time;
+                let startReload = this.player.chara.equipment.spade[0].startReload;
+                let reload = this.player.chara.equipment.spade[0].reload;
                 let reloadWidth = ammoBoxWidth - overblood * 2;
                 let reloadHeight = (ammoBoxHeight - overblood * 2) * (time - startReload) / reload;
                 x += overblood;
@@ -1341,10 +1328,10 @@ class Game {
         this.drawUI(context);
 
         // 调整相机位置
-        this.update_camera(this.player.loc.x, this.player.loc.y, false);
+        this.update_camera(this.player.chara.loc.x, this.player.chara.loc.y, false);
 
         // 若右键按下, 在信息栏显示实体信息
-        if (this.key.mouse_r) this.mouseRightShowInfo();
+        if (this.player.key.mouse_r) this.mouseRightShowInfo();
         else document.getElementById("info_alert").style.display = "none";
     }
     draw(context) {
@@ -1369,8 +1356,8 @@ class Game {
         var c_y = (target_y);
         if (this.player.key.mouse_r) {
             let sightLevel = .2; // 视野越大, 能看的越远
-            c_x = c_x * (1 - sightLevel) + this.key.mouseX * sightLevel;
-            c_y = c_y * (1 - sightLevel) + this.key.mouseY * sightLevel;
+            c_x = c_x * (1 - sightLevel) + this.player.key.mouseX * sightLevel;
+            c_y = c_y * (1 - sightLevel) + this.player.key.mouseY * sightLevel;
         }
         // 平移到屏幕正中间
         c_x -= this.viewport.x / 2;
@@ -1453,8 +1440,8 @@ class Game {
     }
     mouseRightShowInfo() {
             // 从canvas坐标转换为数据坐标
-            let x = this.key.mouseX + this.tile_size / 2;
-            let y = this.key.mouseY + this.tile_size / 2;
+            let x = this.player.key.mouseX + this.tile_size / 2;
+            let y = this.player.key.mouseY + this.tile_size / 2;
             let tile_x = Math.floor(x / this.tile_size);
             let tile_y = Math.floor(y / this.tile_size);
 
@@ -1469,7 +1456,7 @@ class Game {
             <span>
                 砖块id: ${tile.id}; ${tile.solid ? "实心" : "空心"}${tile.bounce ? `; 弹力: ${tile.bounce}` : ""}${tile.friction ? `; 摩擦: {${tile.friction.x},${tile.friction.x}}` : ""}${tile.jump ? "; 可抓墙跳" : ""}
                 <br>
-                mouse: {x:${this.mouse.x.toFixed(1)}, y:${this.mouse.y.toFixed(1)}}; key: {x:${this.key.mouseX.toFixed(1)}, y:${this.key.mouseY.toFixed(1)}}; tile: {x:${tile_x}, y:${tile_y}}
+                mouse: {x:${this.mouse.x.toFixed(1)}, y:${this.mouse.y.toFixed(1)}}; key: {x:${this.player.key.mouseX.toFixed(1)}, y:${this.player.key.mouseY.toFixed(1)}}; tile: {x:${tile_x}, y:${tile_y}}
             </span>`;
     }
 }

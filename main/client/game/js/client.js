@@ -111,6 +111,17 @@ function pullSever(data) {
             }));
             document.querySelectorAll(".serverDelay").forEach(el => el.innerText = Number(data.data.latency).toFixed(2));
             break;
+        case "signal":
+            console.log(`收到了信号: ${data.data.content}`);
+            switch (data.data.content) {
+                case "initialization_done":
+                    game.set_map(0);
+                    setViewZoom(zoomIndex);
+                case "game_start":
+                    game.runningFlag = true;
+                    break;
+            }
+            break;
     }
 }
 

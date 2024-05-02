@@ -43,21 +43,16 @@ class MapData {
      */
     keys;
     /**
-     * 地图数据, 对外接口, 通过_data和keys来获取真实的tile对象
+     * 地图数据
+     * @type {number[][]}
+     * @default [
+     *   [1, 1, 1],
+     *  [2, 2, 2]
+     * ]
      * @memberof MapData
      * @readonly
      * /
     data;
-    /**
-     * 地图数据, id表示
-     * @type {number[][]}
-     * @default [   
-     * [1, 1, 1],
-     * [2, 2, 2]
-     * ]
-     * @memberof MapData
-     */
-    _data;
     /**
      * 重力
      * @type {{x: number, y: number}}
@@ -92,14 +87,14 @@ class MapData {
      * @memberof MapData
      * @readonly
      */
-    width_tile;
+    width;
     /**
      * 地图的高度, 以tile为单位
      * @type {number}
      * @memberof MapData
      * @readonly
      */
-    height_tile;
+    height;
 
     constructor(mapData) {
         this.checkValid(mapData);
@@ -112,19 +107,11 @@ class MapData {
             "1": { "id": 1, "colour": "#12aaf8", "solid": 0, "friction": { "x": 0.01, "y": 0.01 } },
             "2": { "id": 2, "colour": "#046292", "solid": 1, "bounce": 0.2, "friction": { "x": 0.6, "y": 0.6 } },
         };
-        this.data = new Proxy({}, {
-            get: (target, prop1) => {
-                return new Proxy({}, {
-                    get: (target, prop2) => {
-                        return this.getRealTile(prop1)(prop2);
-                    }
-                });
-            }
-        });
-        this._data - mapData.data || [
+        this.data = mapData.data || [
             [1, 1, 1],
             [2, 2, 2]
         ];
+        this.setup();
         this.gravity = mapData.gravity || { "x": 0, "y": 0.24 };
         this.vel_limit = mapData.vel_limit || { "x": 4, "y": 10 };
         this.movement_speed = mapData.movement_speed || { "jump": 6, "left": 0.5, "right": 0.5 };
@@ -142,16 +129,16 @@ class MapData {
         return true;
     }
 
-    setup(map) {
+    setup() {
         // if (typeof this.current_map.onLoad === "function") this.current_map.onLoad();
+        this.width = 0;
+        this.height = this.data.length;
 
-        var _this = (this);
-
-        this.width_tile = 0;
-        _this.height_tile = map.data.length;
-
-        map.data.forEach(function(row, y) {
-            _this.width_tile = Math.max(_this.width_tile, row.length);
+        this.data.forEach((row, y) => {
+            this.width = Math.max(this.width, row.length);
+            row.forEach((tile, x) => {
+                this.data[y][x] = this.keys[tile];
+            });
         });
     }
 
