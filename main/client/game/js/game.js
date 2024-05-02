@@ -82,6 +82,171 @@ const getDistance = function(A, B) {
 }
 
 /**
+ * @class MapData
+ * @classdesc 地图数据类
+ */
+class MapData {
+    /**
+     * 地图名
+     * @type {string}
+     * @default "default map name"
+     * @memberof MapData
+     */
+    mapName;
+    /**
+     * 地图Id
+     * @type {number}
+     * @default 0
+     * @memberof MapData
+     */
+    mapId;
+    /**
+     * 地图块大小
+     * @type {number}
+     * @default 16
+     * @memberof MapData
+     */
+    tile_size;
+    /**
+     * 背景颜色
+     * @type {string}
+     * @default '#333'
+     * @memberof MapData
+     */
+    BGColor;
+    /**
+     * 地图块的属性
+     * @type {{* : {id: number, colour: string, solid: number, bounce: number, friction: {x: number, y: number}}}}
+     * @default {
+     *    "0": { "id": 0, "colour": "#00000000", "solid": 0 },
+     *   "1": { "id": 1, "colour": "#12aaf8", "solid": 0, "friction": { "x": 0.01, "y": 0.01 } },
+     *  "2": { "id": 2, "colour": "#046292", "solid": 1, "bounce": 0.2, "friction": { "x": 0.6, "y": 0.6 } },
+     * }
+     * @memberof MapData
+     */
+    keys;
+    /**
+     * 地图数据, 对外接口, 通过_data和keys来获取真实的tile对象
+     * @memberof MapData
+     * @readonly
+     * /
+    data;
+    /**
+     * 地图数据, id表示
+     * @type {number[][]}
+     * @default [   
+     * [1, 1, 1],
+     * [2, 2, 2]
+     * ]
+     * @memberof MapData
+     */
+    _data;
+    /**
+     * 重力
+     * @type {{x: number, y: number}}
+     * @default { "x": 0, "y": 0.24 }
+     * @memberof MapData
+     */
+    gravity;
+    /**
+     * 速度限制
+     * @type {{x: number, y: number}}
+     * @default { "x": 4, "y": 10 }
+     * @memberof MapData
+     */
+    vel_limit;
+    /**
+     * 移动速度
+     * @type {{jump: number, left: number, right: number}}
+     * @default { "jump": 6, "left": 0.5, "right": 0.5 }
+     * @memberof MapData
+     */
+    movement_speed;
+    /**
+     * 玩家初始位置
+     * @type {{x: number, y: number}}
+     * @default { "x": 1, "y": -2 }
+     * @memberof MapData
+     */
+    playerCheckPoint;
+    /**
+     * 地图的宽度, 以tile为单位
+     * @type {number}
+     * @memberof MapData
+     * @readonly
+     */
+    width_tile;
+    /**
+     * 地图的高度, 以tile为单位
+     * @type {number}
+     * @memberof MapData
+     * @readonly
+     */
+    height_tile;
+
+    constructor(mapData) {
+        checkValid(mapData);
+        this.mapName = mapData.mapName || "default map name";
+        this.mapId = mapData.mapId || 0;
+        this.tile_size = mapData.tile_size || 16;
+        this.BGColor = mapData.BGColor || '#333';
+        this.keys = mapData.keys || {
+            "0": { "id": 0, "colour": "#00000000", "solid": 0 },
+            "1": { "id": 1, "colour": "#12aaf8", "solid": 0, "friction": { "x": 0.01, "y": 0.01 } },
+            "2": { "id": 2, "colour": "#046292", "solid": 1, "bounce": 0.2, "friction": { "x": 0.6, "y": 0.6 } },
+        };
+        this.data = new Proxy({}, {
+            get: (target, prop1) => {
+                return new Proxy({}, {
+                    get: (target, prop2) => {
+                        return this.getRealTile(prop1)(prop2);
+                    }
+                });
+            }
+        });
+        this._data - mapData.data || [
+            [1, 1, 1],
+            [2, 2, 2]
+        ];
+        this.gravity = mapData.gravity || { "x": 0, "y": 0.24 };
+        this.vel_limit = mapData.vel_limit || { "x": 4, "y": 10 };
+        this.movement_speed = mapData.movement_speed || { "jump": 6, "left": 0.5, "right": 0.5 };
+        this.playerCheckPoint = mapData.playerCheckPoint || { "x": 1, "y": -2 };
+    }
+
+    checkValid(mapData) {
+        if (typeof mapData === 'undefined' ||
+            typeof mapData.data === 'undefined' ||
+            typeof mapData.keys === 'undefined') {
+
+            console.error('Error: Invalid mapData data!');
+            return false;
+        }
+        return true;
+    }
+
+    setup(map) {
+        // if (typeof this.current_map.onLoad === "function") this.current_map.onLoad();
+
+        var _this = (this);
+
+        this.width_tile = 0;
+        _this.height_tile = map.data.length;
+
+        map.data.forEach(function(row, y) {
+            _this.width_tile = Math.max(_this.width_tile, row.length);
+        });
+    }
+
+    getRealTile(x) {
+        return function(y) {
+            return this.keys[this._data[y][x]];
+        }
+    }
+
+}
+
+/**
  * @class Bullet
  * with movement
  * @property {number} current_mapId
@@ -645,7 +810,8 @@ class Engine {
     }
 
     load_map(mapData) {
-        this.maps[mapData.map_id] = mapData.map;
+        let m = new MapData(mapData);
+        this.maps[m.mapId] = m;
     }
 
     get_tile_from_mapId(mapId) {
@@ -1416,6 +1582,7 @@ class Game {
                 break;
         }
     }
+
     set_map(map) {
         if (typeof map === 'undefined' ||
             typeof map.data === 'undefined' ||
