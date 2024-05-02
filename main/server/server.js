@@ -623,6 +623,8 @@ const playerDic = {
  */
 const itemDic = {};
 let itemIterator = 0;
+const mapDic = [];
+
 
 // div:初始化websocket
 // 以wifi的ip地址作为服务器的ip地址, port: 432 作为端口号
@@ -678,6 +680,21 @@ wss.on('connection', function(ws) {
     }
 
     // TODO: 发送图片和地图数据
+    (() => {
+        // 用fs遍历`${serverAddress}/images`, 逐一发送
+        let images = fs.readdirSync(`${serverAddress}/images`);
+        images.forEach((image) => {
+            let img = fs.readFileSync(`${serverAddress}/images/${image}`);
+            let data = {
+                pic_src: image.split('.')[0],
+                base64: img.toString('base64')
+            }
+            ws.send(JSON.stringify({
+                type: "pic",
+                data: data
+            }));
+        });
+    })();
 
 
     // 为其设置监听
@@ -1435,7 +1452,7 @@ class GAME {
 
 }
 
-let game = new GAME();
+// let game = new GAME();
 // game.load_map();
 let robo = new Player();
 robo.isRobo = true;
