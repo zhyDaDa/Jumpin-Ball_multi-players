@@ -118,7 +118,7 @@ function pullSever(data) {
                     game.set_map(0);
                     setViewZoom(zoomIndex);
                 case "game_start":
-                    game.runningFlag = true;
+                    game.start();
                     break;
             }
             break;
@@ -184,7 +184,7 @@ function setViewZoom(zoomIndex) {
     // 防止camera瞬时偏移
     game.update_camera(game.player.chara.loc.x, game.player.chara.loc.y, true);
 }
-// setViewZoom(zoomIndex);  
+setViewZoom(zoomIndex);
 
 /* 将viewport限制在地图的范围内*/
 game.limit_viewport = false;
@@ -210,9 +210,11 @@ const Loop = function() {
             // 清空画布
             ctx.fillStyle = game.current_map.background;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // 本地物理引擎计算
+            console.log(`物理引擎更新前player loc: ${game.player.chara.loc.x}, ${game.player.chara.loc.y}`)
+                // 本地物理引擎计算
             engine.updateSelf();
-            // 提交服务器
+            console.log(`物理引擎更新后player loc: ${game.player.chara.loc.x}, ${game.player.chara.loc.y}`)
+                // 提交服务器
             pushServer("player", game.player);
             // 渲染
             game.draw(ctx);

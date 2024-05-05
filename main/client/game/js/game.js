@@ -100,7 +100,7 @@ class Engine {
     load_map(mapData) {
         try {
             let m = new MapData(mapData);
-            m.unzi
+            m.zip();
             this.maps[m.mapId] = m;
             return true;
         } catch (e) {
@@ -111,13 +111,11 @@ class Engine {
     get_tile_from_mapId(mapId) {
         let _this = (this)
         return function(x, y) {
-            x = Math.floor(x);
-            y = Math.floor(y);
-            let current_map = _this.maps[mapId];
-            return (current_map.data[y] && current_map.data[y][x]) ? deepCopy(current_map.keys[current_map.data[y][x]]) : 0;
+            return _this.maps[mapId].getTile(x, y);
         };
     }
 
+    /** x,y为原始坐标 */
     teleport_player(player, x, y, mapId) {
         // 单纯意义上的传送只会改变位置
         if (typeof mapId !== "undefined") {
@@ -139,7 +137,7 @@ class Engine {
     teleport_player_to_savePoint(player) {
         // 存档点就是地图默认玩家位置
         let current_map = this.maps[player.chara.current_mapId];
-        this.teleport_player(player, current_map.player.x, current_map.player.y);
+        this.teleport_player(player, current_map.playerCheckPoint.x * current_map.tile_size, current_map.playerCheckPoint.y * current_map.tile_size, player.chara.current_mapId);
         player.chara.vel.x = 0;
         player.chara.vel.y = 0;
         player.chara.can_jump = true;
@@ -176,23 +174,36 @@ class Engine {
 
     /**
      * 检查obj是否出了地图边界
+     * 默认使用原始坐标, 也可以传入true来使用数字坐标
      * @param {{current_mapId: Number, loc: {x: Number, y: Number}}} obj
+     * @param {Boolean} isDigit 是否使用数字坐标
      * @return {Boolean}
      */
-    fallenCheck(obj) {
-            let _this = (this);
-            let current_map = _this.maps[obj.current_mapId];
-            let tile_size = current_map.tile_size;
-            return (obj.loc.y > current_map.height_p + MAP_BOUNDARY_UNIT.y * tile_size ||
-                obj.loc.y < -MAP_BOUNDARY_UNIT.y * tile_size ||
-                obj.loc.x < -MAP_BOUNDARY_UNIT.x * tile_size ||
-                obj.loc.x > current_map.width_p + MAP_BOUNDARY_UNIT.x * tile_size);
-        }
-        /**
-         * 负责处理玩家的移动, 确定最终位置
-         * @param {Player} player 玩家
-         */
+    fallenCheck(obj, isDigit = false) {
+        let _this = (this);
+        let current_map = _this.maps[obj.current_mapId];
+        let tile_size = current_map.tile_size;
+        let s = isDigit ? tile_size : 1;
+        return (obj.loc.y > (current_map.height + MAP_BOUNDARY_UNIT.y) * s ||
+            obj.loc.y < -MAP_BOUNDARY_UNIT.y * s ||
+            obj.loc.x < -MAP_BOUNDARY_UNIT.x * s ||
+            obj.loc.x > (current_map.width + MAP_BOUNDARY_UNIT.x) * s);
+    }
+
+    abilityRefresh(player) {
+        player.chara.can_jump = true;
+        player.chara.doublejumpFlag = false;
+        player.chara.can_doublejump = true;
+
+        player.chara.can_dash = true;
+    }
+
+    /**
+     * 负责处理玩家的移动, 确定最终位置
+     * @param {Player} player 玩家
+     */
     move_player(player) {
+        console.log(`在move前player loc: ${player.chara.loc.x}, ${player.chara.loc.y}`);
         /* div:异常状态判定 */
         if (player.chara.state.condtion != "normal") {
             player.chara.state.timer_current = new Date().getTime();
@@ -374,9 +385,11 @@ class Engine {
         player.chara.loc.x += player.chara.vel.x;
         player.chara.loc.y += player.chara.vel.y;
 
-        /* 出图判断 */
-        if (this.fallenCheck(player.chara)) {
+        console.log(`在move后player loc: ${player.chara.loc.x}, ${player.chara.loc.y}`);
 
+        /* 出图判断 */
+        if (this.fallenCheck(player.chara, true)) {
+            console.log("被判定为出图");
             // player坠落死亡
             player.chara.state.hp -= FALLEN_DAMAGE;
             player.chara.state.condtion = "fallen";
@@ -386,16 +399,8 @@ class Engine {
             return;
         }
 
-        function abilityRefresh() {
-            player.chara.can_jump = true;
-            player.chara.doublejumpFlag = false;
-            player.chara.can_doublejump = true;
-
-            player.chara.can_dash = true;
-        }
-
         if ((left1.jump || left2.jump || right1.jump || right2.jump) && player.jump_switch > 15) {
-            abilityRefresh();
+            engine.abilityRefresh(player);
             player.jump_switch = 0;
 
         } else player.jump_switch++;
@@ -414,6 +419,8 @@ class Engine {
 
         }
 
+        console.log(`解决左右x方向重叠后 player loc: ${player.chara.loc.x}, ${player.chara.loc.y}`);
+
         if (top1.solid || top2.solid || bottom1.solid || bottom2.solid) {
 
             /* 解决重叠 */
@@ -429,10 +436,12 @@ class Engine {
             /* 着地判断 */
             if ((bottom1.solid || bottom2.solid)) {
                 // player.chara.on_floor = true; // TODO: 若有需要的话还要额外补充不在floor的情况
-                abilityRefresh();
+                engine.abilityRefresh(player);
             }
 
         }
+
+        console.log(`解决上下y方向重叠后 player loc: ${player.chara.loc.x}, ${player.chara.loc.y}`);
 
         // 脚本处理
         if (player.last_tile != tile.id && tile.script) {
@@ -443,6 +452,7 @@ class Engine {
 
         // 如果当前地图有trap, 则执行
         if (typeof current_map.trap === "function") current_map.trap();
+
     }
 
     /**
@@ -878,7 +888,8 @@ class Game {
     }
 
     set_map(mapId) {
-        this.current_map = deepCopy(engine.maps[mapId]);
+        this.current_map = (engine.maps[mapId]);
+        this.current_map.unZip();
         if (typeof this.current_map === "undefined") {
             this.error(`Failed to set map to mapId: ${mapId}`);
             return false;
@@ -1354,7 +1365,7 @@ class Game {
         engine.updateSelf();
     }
     update_situation(players, items) {
-        console.log(`接收服务器的情况更新, players: ${players.length}, items: ${items.length}`);
+        // console.log(`接收服务器的情况更新, players: ${players.length}, items: ${items.length}`);
         this.players = deepCopy(players, true);
         this.items = deepCopy(items, true);
     }
@@ -1466,5 +1477,16 @@ class Game {
                 <br>
                 mouse: {x:${this.mouse.x.toFixed(1)}, y:${this.mouse.y.toFixed(1)}}; key: {x:${this.player.key.mouseX.toFixed(1)}, y:${this.player.key.mouseY.toFixed(1)}}; tile: {x:${tile_x}, y:${tile_y}}
             </span>`;
+    }
+
+    /* 与服务器交互 */
+    start() {
+        // 根据当前currentMap, 启动物理引擎
+        engine.teleport_player_to_savePoint(this.player);
+        game.runningFlag = true;
+
+        console.log("Game start!");
+        console.log(`当前地图: ${this.current_map.mapName}`);
+        console.log(`当前玩家所在位置: ${this.player.chara.loc.x}, ${this.player.chara.loc.y}`);
     }
 }

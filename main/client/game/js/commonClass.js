@@ -95,13 +95,25 @@ class MapData {
      * @readonly
      */
     height;
+    /**
+     * 是否压缩
+     * @type {boolean}
+     * @default true
+     * @memberof MapData
+     */
+    isZipped;
 
+    /**
+     * 从一个压缩的地图数据中生成一个地图对象
+     */
     constructor(mapData) {
         this.checkValid(mapData);
         this.mapName = mapData.mapName || "default map name";
         this.mapId = mapData.mapId || 0;
         this.tile_size = mapData.tile_size || 16;
         this.BGColor = mapData.BGColor || '#333';
+        if (typeof mapData.isZipped != 'undefined' && !mapData.isZipped) mapData.zip();
+        this.isZipped = true;
         this.keys = mapData.keys || {
             "0": { "id": 0, "colour": "#00000000", "solid": 0 },
             "1": { "id": 1, "colour": "#12aaf8", "solid": 0, "friction": { "x": 0.01, "y": 0.01 } },
@@ -139,21 +151,34 @@ class MapData {
         });
     }
 
-    unzip() {
+    unZip() {
+        if (!this.isZipped) return;
         this.data.forEach((row, y) => {
             this.width = Math.max(this.width, row.length);
             row.forEach((tile, x) => {
                 this.data[y][x] = this.keys[tile];
             });
         });
+        this.isZipped = false;
     }
 
     zip() {
+        if (this.isZipped) return;
         this.data.forEach((row, y) => {
             row.forEach((tile, x) => {
                 this.data[y][x] = tile.id;
             });
         });
+        this.isZipped = true;
+    }
+
+    getTile(x, y) {
+        x = Math.floor(x);
+        y = Math.floor(y);
+        if (this.isZipped)
+            return (this.data[y] && this.data[y][x]) ? deepCopy(this.keys[this.data[y][x]]) : 0;
+        else
+            return (this.data[y] && this.data[y][x]) ? deepCopy(this.data[y][x]) : 0;
     }
 
 }

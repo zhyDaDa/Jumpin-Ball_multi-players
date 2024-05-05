@@ -162,6 +162,8 @@ wss.on('connection', function(ws) {
                 // 更新player的数据
                 playerDic[ip] = deepCopy(data.data);
                 playerDic[ip].ip = ip;
+                console.log(`client ${ip} 更新了player数据`);
+                console.log(`当前player在 ${playerDic[ip].chara.loc.x}, ${playerDic[ip].chara.loc.y}`);
                 break;
             case "time":
                 let delta = new Date().getTime() - data.data.time;
@@ -289,7 +291,7 @@ const broadcast = () => {
         if (index != -1) {
             data.players.unshift(data.players.splice(index, 1)[0]);
         } else { console.error(`broadcast函数中: IP为${thisIp}的玩家没找到本人`); }
-        console.log(data);
+        console.log(data.players[0].chara.loc);
         let message = JSON.stringify({
             type: "game",
             data: data
