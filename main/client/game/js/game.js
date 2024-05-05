@@ -203,7 +203,6 @@ class Engine {
      * @param {Player} player 玩家
      */
     move_player(player) {
-        console.log(`在move前player loc: ${player.chara.loc.x}, ${player.chara.loc.y}`);
         /* div:异常状态判定 */
         if (player.chara.state.condtion != "normal") {
             player.chara.state.timer_current = new Date().getTime();
@@ -385,11 +384,8 @@ class Engine {
         player.chara.loc.x += player.chara.vel.x;
         player.chara.loc.y += player.chara.vel.y;
 
-        console.log(`在move后player loc: ${player.chara.loc.x}, ${player.chara.loc.y}`);
-
         /* 出图判断 */
         if (this.fallenCheck(player.chara, true)) {
-            console.log("被判定为出图");
             // player坠落死亡
             player.chara.state.hp -= FALLEN_DAMAGE;
             player.chara.state.condtion = "fallen";
@@ -419,8 +415,6 @@ class Engine {
 
         }
 
-        console.log(`解决左右x方向重叠后 player loc: ${player.chara.loc.x}, ${player.chara.loc.y}`);
-
         if (top1.solid || top2.solid || bottom1.solid || bottom2.solid) {
 
             /* 解决重叠 */
@@ -440,8 +434,6 @@ class Engine {
             }
 
         }
-
-        console.log(`解决上下y方向重叠后 player loc: ${player.chara.loc.x}, ${player.chara.loc.y}`);
 
         // 脚本处理
         if (player.last_tile != tile.id && tile.script) {
@@ -985,7 +977,7 @@ class Game {
     draw_player(context, player) {
         let span = player_info_fontSize * nameMaxLength / 2; // 显示名字的矩形的宽度
         // 绘制圆球本体
-        context.fillStyle = player.colour;
+        context.fillStyle = player.chara.colour;
         context.beginPath();
         context.arc(
             player.chara.loc.x - this.camera.x,
