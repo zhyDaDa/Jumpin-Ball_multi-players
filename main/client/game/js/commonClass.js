@@ -1,3 +1,76 @@
+// 渲染常量
+const BGColor = '#333';
+const nameMaxLength = 15;
+const TRACER_LINE_WIDTH = 4;
+const HPBarColor = '#ff5555aa';
+const HPBarWidth = 30;
+const HPBarHeight = 4;
+const UI_BarColor_underlay = '#22222266';
+const UI_HPBarColor_front = '#02b05d';
+const UI_MPBarColor_front = '#19699f';
+const player_info_fontSize = 12;
+const cursor_size = 20;
+// 物理常量
+const defaultPlayerSize = 16; // 玩家的默认尺寸
+const defaultHitBoxSize = 10; // 玩家的默认碰撞箱尺寸
+const FALLEN_DAMAGE = 10; // 坠落伤害
+const VEL_STILL = 0.05; // 停止速度
+/**
+ * 地图边界的检测范围, 注意要乘上当前地图的tile_size
+ * @property {number} x
+ * @property {number} y
+ */
+const MAP_BOUNDARY_UNIT = { x: 30, y: 20 };
+
+/**
+ * 常量ENUM生成器
+ * @return {Object.<string, number>}
+ */
+const createConstants = (function() {
+    let privateConstants = {};
+
+    return function() {
+        for (let i = 0; i < arguments.length; i++) {
+            privateConstants[arguments[i]] = i;
+        }
+        return privateConstants;
+    };
+})();
+const _enumConstants = [
+    "BULLET_TYPE_NORMAL",
+    "BULLET_TYPE_GOLD",
+    "BULLET_TYPE_SUPER",
+    "BULLET_TYPE_EXPLOSIVE",
+    "BULLET_TYPE_LASER",
+    "SHAPE_CIRCLE",
+    "SHAPE_RECT",
+    "SHAPE_TRIANGLE",
+    "ITEM_TYPE_SPADE", "ITEM_TYPE_CLUB", "ITEM_TYPE_HEART", "ITEM_TYPE_DIAMOND",
+    "ITEM_CLASS_WHITE", "ITEM_CLASS_BLACK",
+    "ITEM_STATE_WILD", "ITEM_STATE_EQUIPPED", "ITEM_STATE_SHOP",
+];
+/**
+ * @readonly
+ * @enum {number}
+ */
+const enums = createConstants(..._enumConstants);
+
+const deepCopy = function(source, kaiguan) {
+    let result = {};
+    if (kaiguan == 1) result = [];
+    for (let key in source) {
+        if (Object.prototype.toString.call(source[key]) === '[object Object]') {
+            result[key] = deepCopy(source[key])
+        }
+        if (Object.prototype.toString.call(source[key]) === '[object Array]') {
+            result[key] = deepCopy(source[key], 1)
+        } else {
+            result[key] = source[key]
+        }
+    }
+    return result;
+}
+
 /**
  * @class MapData
  * @classdesc 地图数据类
@@ -128,6 +201,7 @@ class MapData {
         this.vel_limit = mapData.vel_limit || { "x": 4, "y": 10 };
         this.movement_speed = mapData.movement_speed || { "jump": 6, "left": 0.5, "right": 0.5 };
         this.playerCheckPoint = mapData.playerCheckPoint || { "x": 1, "y": -2 };
+        this.reviveCooldown = mapData.reviveCooldown || 3000;
     }
 
     checkValid(mapData) {
@@ -327,7 +401,7 @@ class Bullet {
         // this = undefined;
     }
 }
-
+let itemIterator = 0;
 /**
  * @type
  * @class Item
@@ -363,21 +437,23 @@ class Item {
      * @param {number} _mapId 地图Id
      * @param {{x:number, y:number}} _pos 位置
      */
-    constructor(_name, _pic_src, _type, _class, _tier, _price, _colour, _info, _mapId, _pos) {
-        this.name = _name || "default item";
-        this.pic_src = _pic_src || this.name;
-        this.type = _type; // ITEM_TYPE_SPADE, ITEM_TYPE_CLUB, ITEM_TYPE_HEART, ITEM_TYPE_DIAMOND
-        this.class = _class; // ITEM_CLASS_WHITE, ITEM_CLASS_BLACK
-        this.tier = _tier;
-        this.price = _price;
+    constructor(itemData) {
+        // TODO: 重写一份文档说明, index是和文件的对应, src是base64编码
+        this.name = itemData.name || "default item";
+        this.pic_index = itemData.pic_index || this.name;
+        this.pic_src = itemData.pic_src || "data:image/png;base64, 000000";
+        this.type = itemData.type; // ITEM_TYPE_SPADE, ITEM_TYPE_CLUB, ITEM_TYPE_HEART, ITEM_TYPE_DIAMOND
+        this.class = itemData.class; // ITEM_CLASS_WHITE, ITEM_CLASS_BLACK
+        this.tier = itemData.tier;
+        this.price = itemData.price;
 
-        this.colour = _colour;
-        this.info = _info;
+        this.colour = itemData.colour;
+        this.info = itemData.info;
         this.id = itemIterator++;
         console.log
         this.belongerIp = "";
-        this.mapId = _mapId || 0;
-        this.pos = deepCopy(_pos) || { x: 0, y: 0 };
+        this.mapId = itemData.mapId || 0;
+        this.pos = deepCopy(itemData.pos) || { x: 0, y: 0 };
         this.state = enums.ITEM_STATE_WILD; // ITEM_STATE_WILD, ITEM_STATE_EQUIPPED, ITEM_STATE_SHOP
     }
 
@@ -430,7 +506,18 @@ class Spade extends Item {
      * @param {{x:number, y:number}} _pos 位置
      */
     constructor(_name = "default spade", _pic_src = "default_src", _type = 0, _class = 0, _tier = 0, _price = 0, _colour = "#000", _info = "物品说明") {
-        super(_name, _pic_src, _type, _class, _tier, _price, _colour, _info);
+        super(
+            {
+                name: _name,
+                pic_src: _pic_src,
+                type: _type,
+                class: _class,
+                tier: _tier,
+                price: _price,
+                colour: _colour,
+                info: _info
+            }
+        );
         this.type = enums.ITEM_TYPE_SPADE;
 
         /** @default 20 */
@@ -737,6 +824,13 @@ class Player {
 
 if (typeof(module) !== 'undefined')
     module.exports = {
+        defaultPlayerSize,
+        defaultHitBoxSize,
+        FALLEN_DAMAGE,
+        VEL_STILL,
+        MAP_BOUNDARY_UNIT,
+        enums,
+
         MapData,
         Bullet,
         Item,

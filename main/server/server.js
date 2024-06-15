@@ -1,49 +1,5 @@
 console.log('Server.js 开始运行');
 const serverAddress = "main/server";
-const defaultPlayerSize = 16; // 玩家的默认尺寸
-const defaultHitBoxSize = 10; // 玩家的默认碰撞箱尺寸
-const FALLEN_DAMAGE = 10; // 坠落伤害
-const VEL_STILL = 0.05; // 停止速度
-/**
- * 地图边界的检测范围, 注意要乘上当前地图的tile_size
- * @property {number} x
- * @property {number} y
- */
-const MAP_BOUNDARY_UNIT = { x: 30, y: 20 };
-
-/**
- * 常量ENUM生成器
- * @return {Object.<string, number>}
- */
-const createConstants = (function() {
-    let privateConstants = {};
-
-    return function() {
-        for (let i = 0; i < arguments.length; i++) {
-            privateConstants[arguments[i]] = i;
-        }
-        return privateConstants;
-    };
-})();
-const _enumConstants = [
-    "BULLET_TYPE_NORMAL",
-    "BULLET_TYPE_GOLD",
-    "BULLET_TYPE_SUPER",
-    "BULLET_TYPE_EXPLOSIVE",
-    "BULLET_TYPE_LASER",
-    "SHAPE_CIRCLE",
-    "SHAPE_RECT",
-    "SHAPE_TRIANGLE",
-    "ITEM_TYPE_SPADE", "ITEM_TYPE_CLUB", "ITEM_TYPE_HEART", "ITEM_TYPE_DIAMOND",
-    "ITEM_CLASS_WHITE", "ITEM_CLASS_BLACK",
-    "ITEM_STATE_WILD", "ITEM_STATE_EQUIPPED", "ITEM_STATE_SHOP",
-];
-/**
- * @readonly
- * @enum {number}
- */
-const enums = createConstants(..._enumConstants);
-
 
 const timeCheckInterval = 1000;
 const timeCheckBufferSize = 12;
@@ -52,7 +8,21 @@ const { time, debug } = require('console');
 const fs = require('fs');
 const WebSocketServer = require('ws').Server;
 // 引用main\client\game\js\commonClass.js的内容, 其中有多个class的定义, 全部引用
-const { MapData, Bullet, Item, Spade, Chara, Player } = require("D:/Coding/JavaScript/zhyDaDa_js_works/JumpinBall/main/client/game/js/commonClass.js");
+const {
+    defaultPlayerSize,
+    defaultHitBoxSize,
+    FALLEN_DAMAGE,
+    VEL_STILL,
+    MAP_BOUNDARY_UNIT,
+    enums,
+
+    MapData,
+    Bullet,
+    Item,
+    Spade,
+    Chara,
+    Player
+} = require("D:/Coding/JavaScript/zhyDaDa_js_works/JumpinBall/main/client/game/js/commonClass.js");
 
 /* div: 对象设定 */
 /**
@@ -124,6 +94,7 @@ wss.on('connection', function(ws) {
         })();
     }
 
+    // 初次连接, 向其发送图片和地图数据
     (() => {
         console.log(`client ${ws._socket.remoteAddress} 初次连接, 准备向其发送图片和地图数据`);
         // 用fs遍历`${serverAddress}/images`, 逐一发送
@@ -162,8 +133,6 @@ wss.on('connection', function(ws) {
                 // 更新player的数据
                 playerDic[ip] = deepCopy(data.data);
                 playerDic[ip].ip = ip;
-                console.log(`client ${ip} 更新了player数据`);
-                console.log(`当前player在 ${playerDic[ip].chara.loc.x}, ${playerDic[ip].chara.loc.y}`);
                 break;
             case "time":
                 let delta = new Date().getTime() - data.data.time;
@@ -291,7 +260,6 @@ const broadcast = () => {
         if (index != -1) {
             data.players.unshift(data.players.splice(index, 1)[0]);
         } else { console.error(`broadcast函数中: IP为${thisIp}的玩家没找到本人`); }
-        console.log(data.players[0].chara.loc);
         let message = JSON.stringify({
             type: "game",
             data: data
@@ -1017,14 +985,14 @@ setInterval(() => {
 // wild_item.pos.x = 3;
 // wild_item.pos.y = 7;
 
-// let wild_item2 = new Spade("gold fox", "gold fox", 0, 0, 1, 10, "yellow", "雪狐土豪金");
-// wild_item2.state = enums.ITEM_STATE_WILD;
-// itemDic[wild_item2.id] = wild_item2;
-// wild_item2.pos.x = 30;
-// wild_item2.pos.y = 7;
-// wild_item2.delay = 120;
-// wild_item2.ammo_max = 30;
-// wild_item2.bullet_state.type = enums.BULLET_TYPE_GOLD;
+let wild_item2 = new Spade("gold fox", "gold fox", 0, 0, 1, 10, "yellow", "雪狐土豪金");
+wild_item2.state = enums.ITEM_STATE_WILD;
+wild_item2.pos.x = 30;
+wild_item2.pos.y = 7;
+wild_item2.delay = 120;
+wild_item2.ammo_max = 30;
+wild_item2.bullet_state.type = enums.BULLET_TYPE_GOLD;
+itemDic[wild_item2.id] = wild_item2;
 
 // let wild_item3 = new Spade("gold fox XL", "gold fox", 0, 0, 1, 10, "yellow", "雪狐土豪金");
 // wild_item3.state = enums.ITEM_STATE_WILD;

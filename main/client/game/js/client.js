@@ -7,7 +7,7 @@ let zoomIndex = localStorage.getItem("zoomIndex") || 1.2;
 let trapClock = 0;
 
 /**
- * 存放物品图片
+ * 存放物品图片, 记得加data:image/png;base64,
  * pic_src => base64的src
  */
 const picDic = {};
@@ -210,11 +210,9 @@ const Loop = function() {
             // 清空画布
             ctx.fillStyle = game.current_map.background;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            console.log(`物理引擎更新前player loc: ${game.player.chara.loc.x}, ${game.player.chara.loc.y}`)
-                // 本地物理引擎计算
+            // 本地物理引擎计算
             engine.updateSelf();
-            console.log(`物理引擎更新后player loc: ${game.player.chara.loc.x}, ${game.player.chara.loc.y}`)
-                // 提交服务器
+            // 提交服务器
             pushServer("player", game.player);
             // 渲染
             game.draw(ctx);

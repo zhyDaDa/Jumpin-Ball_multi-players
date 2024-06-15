@@ -1,76 +1,3 @@
-// 渲染常量
-const BGColor = '#333';
-const nameMaxLength = 15;
-const TRACER_LINE_WIDTH = 4;
-const HPBarColor = '#ff5555aa';
-const HPBarWidth = 30;
-const HPBarHeight = 4;
-const UI_BarColor_underlay = '#22222266';
-const UI_HPBarColor_front = '#02b05d';
-const UI_MPBarColor_front = '#19699f';
-const player_info_fontSize = 12;
-const cursor_size = 20;
-// 物理常量
-const defaultPlayerSize = 16; // 玩家的默认尺寸
-const defaultHitBoxSize = 10; // 玩家的默认碰撞箱尺寸
-const FALLEN_DAMAGE = 10; // 坠落伤害
-const VEL_STILL = 0.05; // 停止速度
-/**
- * 地图边界的检测范围, 注意要乘上当前地图的tile_size
- * @property {number} x
- * @property {number} y
- */
-const MAP_BOUNDARY_UNIT = { x: 30, y: 20 };
-
-/**
- * 常量ENUM生成器
- * @return {Object.<string, number>}
- */
-const createConstants = (function() {
-    let privateConstants = {};
-
-    return function() {
-        for (let i = 0; i < arguments.length; i++) {
-            privateConstants[arguments[i]] = i;
-        }
-        return privateConstants;
-    };
-})();
-const _enumConstants = [
-    "BULLET_TYPE_NORMAL",
-    "BULLET_TYPE_GOLD",
-    "BULLET_TYPE_SUPER",
-    "BULLET_TYPE_EXPLOSIVE",
-    "BULLET_TYPE_LASER",
-    "SHAPE_CIRCLE",
-    "SHAPE_RECT",
-    "SHAPE_TRIANGLE",
-    "ITEM_TYPE_SPADE", "ITEM_TYPE_CLUB", "ITEM_TYPE_HEART", "ITEM_TYPE_DIAMOND",
-    "ITEM_CLASS_WHITE", "ITEM_CLASS_BLACK",
-    "ITEM_STATE_WILD", "ITEM_STATE_EQUIPPED", "ITEM_STATE_SHOP",
-];
-/**
- * @readonly
- * @enum {number}
- */
-const enums = createConstants(..._enumConstants);
-
-const deepCopy = function(source, kaiguan) {
-    let result = {};
-    if (kaiguan == 1) result = [];
-    for (let key in source) {
-        if (Object.prototype.toString.call(source[key]) === '[object Object]') {
-            result[key] = deepCopy(source[key])
-        }
-        if (Object.prototype.toString.call(source[key]) === '[object Array]') {
-            result[key] = deepCopy(source[key], 1)
-        } else {
-            result[key] = source[key]
-        }
-    }
-    return result;
-}
-
 /**
  * 获得两个{x,y}之间的距离
  * @param {{x:Number, y:Number}} A
@@ -585,7 +512,7 @@ class Engine {
         if (!player.pick_switch && player.key.pick) {
             console.log("can pick");
             // 检查当前位置是否有道具
-            let items = Object.values(itemDic).filter(item => item.mapId == player.chara.current_mapId && item.state != enums.ITEM_STATE_EQUIPPED);
+            let items = game.items;
             items.forEach(item => {
                 console.log(`${item.name} at (${item.pos.x},${item.pos.y}), distance: ${getDistance(item.pos, player.chara.getDigitPosition(this))}`);
                 if (getDistance(item.pos, player.chara.getDigitPosition(this)) < player.chara.pickRange) {
@@ -945,9 +872,9 @@ class Game {
 
     }
     draw_items(context, items) {
-        for (let item in items) {
+        items.forEach(item => {
             this.draw_item(context, item);
-        }
+        });
     }
     draw_item(context, item) {
         let x = item.pos.x * this.current_map.tile_size - this.camera.x;
@@ -957,7 +884,7 @@ class Game {
 
         if (picDic[item.pic_src]) {
             let img = new Image();
-            img.src = picDic[item.pic_src];
+            img.src = "data:image/png;base64," + picDic[item.pic_src];
             // 居中绘制 取物品的高度作为参考
             let scale = len / img.height;
             let drawWidth = img.width * scale;
@@ -1243,7 +1170,7 @@ class Game {
         if (this.player.chara.equipment.spade.length > 0) {
             if (picDic[this.player.chara.equipment.spade[0].pic_src]) {
                 let img = new Image();
-                img.src = picDic[this.player.chara.equipment.spade[0].pic_src];
+                img.src = "data:image/png;base64," + picDic[this.player.chara.equipment.spade[0].pic_src];
                 // 居中绘制
                 let scale = Math.min((UI_weaponPicBox_width - overblood * 2) / img.width, (UI_weaponPicBox_height - overblood * 2) / img.height);
                 let drawWidth = img.width * scale;
@@ -1251,7 +1178,7 @@ class Game {
                 context.drawImage(img, x + UI_weaponPicBox_width / 2 - drawWidth / 2, y + UI_weaponPicBox_height / 2 - drawHeight / 2, drawWidth, drawHeight);
             } else {
                 // 请求图片
-                socket_file.send(JSON.stringify({ type: "item_pic", pic_src: this.player.chara.equipment.spade[0].pic_src }));
+                this.log(`绘制手中武器时, src为${this.player.chara.equipment.spade[0].pic_src}的图片不存在`)
                 // 绘制默认图片
                 context.fillStyle = "black";
                 context.fillRect(x + overblood, y + overblood, UI_weaponPicBox_width - overblood * 2, UI_weaponPicBox_height - overblood * 2);
@@ -1358,8 +1285,12 @@ class Game {
     }
     update_situation(players, items) {
         // console.log(`接收服务器的情况更新, players: ${players.length}, items: ${items.length}`);
-        this.players = deepCopy(players, true);
-        this.items = deepCopy(items, true);
+        this.players = players;
+        for(let i=0; i<items.length; i++) {
+            let item = items[i];
+            Object.setPrototypeOf(item, Item.prototype);
+            this.items.push(item);
+        }
     }
     update_camera(target_x, target_y, direct) {
         // 相机位置是数据坐标位置
